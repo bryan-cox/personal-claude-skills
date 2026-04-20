@@ -20,6 +20,10 @@ A behavior is something a caller or user would notice:
 
 If you can't articulate what would break, you probably don't need that test case. Conversely, if you can articulate a behavior that no existing test covers, that's a gap worth filling regardless of what the coverage number says.
 
+## No Network Dependencies
+
+Unit tests must run fully offline -- assume airplane mode. Never fetch resources from the internet, pull container images, call external APIs, or depend on any remote service. All test data must be local: fixtures, fake clients, inline literals, or golden files checked into the repository. If a function under test makes network calls, mock the dependency with a fake or stub that returns canned data. A test that fails because a server is unreachable is not a unit test.
+
 ## Test Structure
 
 Use table-driven tests with Go subtests. This is idiomatic Go and the standard pattern in this codebase.
@@ -179,6 +183,14 @@ When deciding what test cases to write, think about the function's behavioral co
 
 - **Every permutation**: If a function takes 3 booleans, you don't need 8 test cases. Identify which combinations represent meaningfully different behaviors and test those.
 
+### What NOT to Use
+
+- Do NOT use `assert` or `require` from testify -- use Gomega matchers instead.
+- Do NOT use Ginkgo `Describe`/`It` blocks for unit tests -- use standard `func Test...(t *testing.T)` with table-driven sub-tests.
+- Do NOT add `//go:build` tags -- those are for e2e tests only.
+- Do NOT import packages outside the vendored dependencies without checking `vendor/` first.
+- Do NOT make network calls, fetch remote resources, or depend on external services. All test data must be local.
+
 ## Test Organization
 
 ### Parallel Execution
@@ -262,6 +274,68 @@ func (m *mockEC2Client) DescribeInstances(ctx context.Context, input *ec2.Descri
 ```
 
 This lets each test case define exactly the behavior it needs from the dependency, keeping the focus on the code under test.
+
+### Mocking with gomock
+
+For dependencies that have well-defined interfaces and are NOT Kubernetes clients or cloud SDK clients, use `go.uber.org/mock/gomock` with `mockgen`:
+
+```go
+import (
+    "go.uber.org/mock/gomock"
+    mockfoo "github.com/openshift/hypershift/pkg/foo/mock"
+)
+
+func TestSomething(t *testing.T) {
+    g := NewWithT(t)
+    ctrl := gomock.NewController(t)
+
+    mockSvc := mockfoo.NewMockMyInterface(ctrl)
+    mockSvc.EXPECT().DoWork(gomock.Any()).Return("result", nil)
+
+    result, err := MyFunc(mockSvc)
+    g.Expect(err).ToNot(HaveOccurred())
+    g.Expect(result).To(Equal("result"))
+}
+```
+
+When generating a new mock, provide the `mockgen` command:
+
+```
+mockgen -destination=pkg/foo/mock/mock_foo.go -package=mock github.com/openshift/hypershift/pkg/foo MyInterface
+```
+
+Guidelines for gomock usage:
+
+- **Minimize `gomock.Any()`** -- prefer specific matchers that verify the actual arguments passed. `gomock.Any()` hides bugs by accepting anything; use it only when the argument is truly irrelevant to the test.
+- **Use `gomock.InOrder()`** to enforce call ordering when the sequence of interactions matters.
+- Generated `_mock.go` files are build artifacts -- add them to `.gitignore` and regenerate as needed.
+
+### Cloud SDK Mocks (e.g. AWS)
+
+For cloud SDK clients, use custom mock structs with callback fields rather than gomock. This gives each test case direct control over the canned response:
+
+```go
+type fakeEC2Client struct {
+    describeInstancesOutput *ec2.DescribeInstancesOutput
+    describeInstancesErr    error
+}
+
+func (f *fakeEC2Client) DescribeInstances(ctx context.Context, input *ec2.DescribeInstancesInput, ...) (*ec2.DescribeInstancesOutput, error) {
+    return f.describeInstancesOutput, f.describeInstancesErr
+}
+```
+
+### Golden File Testing
+
+When testing output against known-good fixtures, use the project helper:
+
+```go
+import "github.com/openshift/hypershift/support/testutil"
+
+testutil.CompareWithFixture(t, output)
+```
+
+Run with `UPDATE=true` to regenerate fixture files. Golden files must be checked into the repository -- they are local test data, not fetched at runtime.
 
 ## Context in Tests: Use `t.Context()`
 
