@@ -1,0 +1,8 @@
+{
+  "name": "hypershift-staff-engineer",
+  "description": "Expert-level code review, architecture guidance, and best practices for HyperShift development",
+  "version": "0.1.0",
+  "author": {
+    "name": "github.com/bryan-cox"
+  }
+}
