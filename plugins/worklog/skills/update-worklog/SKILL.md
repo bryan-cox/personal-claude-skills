@@ -204,6 +204,7 @@ Then consolidate ALL verified non-authored PRs into **one task**:
 1. **jira_ticket**: `"Reviewing Pull Requests"`
 2. **descriptions**: One entry per PR, format: `"Reviewed <PR URL>"` or `"Commented on <PR URL>"`
    - If both reviewed AND commented, just use `"Reviewed <PR URL>"` (review implies comments)
+   - **Sort order:** All `"Reviewed"` entries must come before all `"Commented on"` entries
 3. **status**: `"completed"`
 4. **github_pr**: `""` (empty, since there are multiple PRs)
 5. **Build task object**:
@@ -238,7 +239,7 @@ Authored PRs with empty JIRA tickets remain as separate tasks.
    - **Merged-on-different-day detection:** For each authored PR that is now merged/closed and was NOT already handled by same-day merge detection, perform two checks:
      1. **Match by `github_pr` URL:** Scan ALL dates in the worklog (not just `TARGET_DATE`) for an existing entry with the same `github_pr` URL and `status: "in progress"`. If found, the PR was previously logged as in-progress on an earlier date and has since merged — create a **new** completed entry for `TARGET_DATE` with description `"Merged PR: <title without JIRA prefix>"`, `status: "completed"`, and `upnext_description: ""`. Do NOT modify the earlier date's entry.
      2. **Match by `jira_ticket`:** If the URL match above did not find anything AND the merged PR has a non-empty JIRA ticket, scan ALL dates in the worklog for an existing entry with the same `jira_ticket` value and `status: "in progress"`. This catches cases where multiple PRs were grouped under one JIRA ticket but the `github_pr` field only stored one PR's URL. If found, create a **new** completed entry for `TARGET_DATE` with description `"Merged PR: <title without JIRA prefix>"`, `status: "completed"`, and `upnext_description: ""`. Do NOT modify the earlier date's entry.
-   - For the consolidated review task: check if a `"Reviewing Pull Requests"` task already exists for that date. If so, check which PR URLs are already listed in its descriptions. Append only new descriptions (for PRs not already listed) to the existing task's `descriptions` array. If no new PRs to add, skip.
+   - For the consolidated review task: check if a `"Reviewing Pull Requests"` task already exists for that date. If so, check which PR URLs are already listed in its descriptions. Append only new descriptions (for PRs not already listed) to the existing task's `descriptions` array, then re-sort the full descriptions array so all `"Reviewed"` entries come before all `"Commented on"` entries. If no new PRs to add, skip.
    - Append only genuinely new authored tasks to the existing `tasks` array
    - If no new tasks to add, report "No new PR activity to add" and stop
    - If no entry for date: create new day entry:
