@@ -1,0 +1,8 @@
+{
+  "name": "obsidian-vault",
+  "description": "Search, create, and manage notes in the Obsidian vault",
+  "version": "0.1.0",
+  "author": {
+    "name": "github.com/bryan-cox"
+  }
+}
