@@ -12,12 +12,13 @@ Queries GitHub for all PR activity (authored, reviewed, commented) on a given da
 ## Arguments
 
 ```
-/populate-from-prs [--file PATH] [--date YYYY-MM-DD] [--dry-run]
+/populate-from-prs [--file PATH] [--date YYYY-MM-DD] [--dry-run] [--obsidian]
 ```
 
 - `--file`: Path to worklog.yaml (default: `~/worklog/worklog.yaml`)
 - `--date`: Date to populate (default: today's date from system)
 - `--dry-run`: Show generated entries without writing to file
+- `--obsidian`: Write output to the Obsidian daily note at ~/Red Hat/Work log/YYYY/MM/YYYY-MM-DD.md instead of worklog.yaml. Uses markdown format matching the obsidian-vault skill's Daily Log Format.
 
 ## Implementation
 
@@ -281,6 +282,83 @@ Match the existing worklog.yaml style exactly:
 - 2-space indentation throughout
 - List items use `- ` prefix with appropriate indentation
 - `last_updated` is placed as the first field under the date key, before `work_log`
+
+## Obsidian Output Mode
+
+When `--obsidian` is passed, skip Phase 6's YAML write and instead write to the Obsidian daily note at `~/Red Hat/Work log/{YYYY}/{MM}/{YYYY-MM-DD}.md`.
+
+### File location
+`~/Red Hat/Work log/YYYY/MM/YYYY-MM-DD.md` where YYYY/MM/DD come from `TARGET_DATE`.
+
+### Note structure
+
+If the file does not exist, create it with this header:
+```markdown
+# Daily Log · {TARGET_DATE}
+
+*Last updated: {TIMESTAMP}*
+
+## 🕐 Hours
+(not set)
+
+## 🦀 Work
+```
+
+If the file already exists, update `*Last updated:*` to the current timestamp and append new content into the `## 🦀 Work` section.
+
+### Task format
+
+Each authored PR task becomes a markdown section:
+
+**With JIRA ticket:**
+```markdown
+### {JIRA} · {title without JIRA prefix}
+
+**JIRA:** [{JIRA}](https://issues.redhat.com/browse/{JIRA})
+**PR:** [#{number}]({url})
+**Status:** {In Progress | Completed}
+
+- {description line 1}
+- {description line 2}
+
+**Next:** {upnext_description}
+
+---
+```
+
+**Without JIRA ticket:**
+```markdown
+### {title}
+
+**PR:** [#{number}]({url})
+**Status:** {In Progress | Completed}
+
+- {description line 1}
+
+**Next:** {upnext_description}
+
+---
+```
+
+Omit the `**Next:**` line for completed tasks.
+
+### Code Reviews section
+
+Consolidate all review/comment-only PRs into a `### Code Reviews` section (instead of a YAML task). Sort `Reviewed` entries before `Commented on` entries.
+
+If a `### Code Reviews` section already exists in the note, append only new PR entries (not already listed) and re-sort: all `Reviewed` lines first, then all `Commented on` lines.
+
+```markdown
+### Code Reviews
+
+- Reviewed [PR #1234](https://github.com/org/repo/pull/1234)
+- Reviewed [PR #5678](https://github.com/org/repo/pull/5678)
+- Commented on [PR #9012](https://github.com/org/repo/pull/9012)
+```
+
+### last_updated
+
+After writing, update the `*Last updated: ...*` line in the note to the current UTC timestamp (`date -u +%Y-%m-%dT%H:%M:%SZ`). This timestamp is used as `LAST_UPDATED` on incremental runs.
 
 ## Example Output
 
