@@ -12,13 +12,12 @@ Queries GitHub for all PR activity (authored, reviewed, commented) on a given da
 ## Arguments
 
 ```
-/populate-from-prs [--file PATH] [--date YYYY-MM-DD] [--dry-run] [--obsidian]
+/populate-from-prs [--file PATH] [--date YYYY-MM-DD] [--dry-run]
 ```
 
-- `--file`: Path to worklog.yaml (default: `~/worklog/worklog.yaml`)
+- `--file`: Path to an explicit worklog.yaml to write instead of the Obsidian daily note. When provided, output is written as YAML to this file path.
 - `--date`: Date to populate (default: today's date from system)
 - `--dry-run`: Show generated entries without writing to file
-- `--obsidian`: Write output to the Obsidian daily note at ~/Red Hat/Work log/YYYY/MM/YYYY-MM-DD.md instead of worklog.yaml. Uses markdown format matching the obsidian-vault skill's Daily Log Format.
 
 ## Implementation
 
@@ -27,11 +26,12 @@ Execute the following workflow step by step:
 ### Phase 1: Parse Arguments and Load Timestamp
 
 Extract from user input:
-- `FILE_PATH`: worklog file path (default `~/worklog/worklog.yaml`)
+- `FILE_PATH`: explicit worklog.yaml path if `--file` was provided; otherwise empty (Obsidian is the default output)
+- `USE_OBSIDIAN`: true if `FILE_PATH` is empty, false if `--file` was provided
 - `TARGET_DATE`: date in `YYYY-MM-DD` format. If not provided, determine today's date by running `date +%Y-%m-%d`
 - `DRY_RUN`: boolean (default: false)
 
-**Load incremental timestamp:** Read the existing worklog file and check if the `TARGET_DATE` entry has a `last_updated` field. This ISO 8601 timestamp (e.g., `"2026-04-02T15:22:00Z"`) records when `/update-worklog` last ran for this date.
+**Load incremental timestamp:** Read the existing output target (Obsidian note or worklog.yaml) and check if the `TARGET_DATE` entry has a `last_updated` field (YAML) or `*Last updated:*` line (Obsidian note). This ISO 8601 timestamp (e.g., `"2026-04-02T15:22:00Z"`) records when `/update-worklog` last ran for this date.
 - If found, store as `LAST_UPDATED` — subsequent phases will only look at activity *after* this timestamp
 - If not found (first run for this date), set `LAST_UPDATED` to empty — phases will use date-level filtering (`startswith("{TARGET_DATE}")`)
 
@@ -254,16 +254,21 @@ Authored PRs with empty JIRA tickets remain as separate tasks.
 
 ### Phase 6: Preview and Write
 
-1. **Display** the generated/new tasks to the user in YAML format
+1. **Display** the generated/new tasks to the user in a readable format
 2. **Show summary**: "Found X PRs, generating Y new tasks (Z already in worklog)"
 3. If incremental run, note: "Incremental run (since {LAST_UPDATED})"
 4. If `--dry-run`: stop here
 5. Otherwise, **ask the user to confirm** before writing
-6. **Write** the updated worklog.yaml, preserving:
+6. **Write** based on whether `--file` was provided:
+
+   **Default (Obsidian):** Write to `~/Red Hat/Work log/{YYYY}/{MM}/{YYYY-MM-DD}.md` following the Obsidian Output Format section below.
+
+   **Explicit file (`--file` provided):** Write the updated worklog.yaml, preserving:
    - The new date entry at the TOP of the file (after the `---` line)
    - All existing entries below, unchanged
    - Exact YAML formatting matching existing entries (2-space indent, quoted strings for dates and values)
-7. **Update `last_updated` timestamp:** After successfully writing tasks, set the `last_updated` field on the `TARGET_DATE` entry to the current UTC time in ISO 8601 format. Get the timestamp by running `date -u +%Y-%m-%dT%H:%M:%SZ`. Write it as the first field under the date key, before `work_log`:
+
+   After writing, update the `last_updated` timestamp: set the `last_updated` field on the `TARGET_DATE` entry to the current UTC time in ISO 8601 format. Get the timestamp by running `date -u +%Y-%m-%dT%H:%M:%SZ`. Write it as the first field under the date key, before `work_log`:
    ```yaml
    "2026-04-02":
      last_updated: "2026-04-02T15:22:00Z"
@@ -283,9 +288,9 @@ Match the existing worklog.yaml style exactly:
 - List items use `- ` prefix with appropriate indentation
 - `last_updated` is placed as the first field under the date key, before `work_log`
 
-## Obsidian Output Mode
+## Obsidian Output Format (Default)
 
-When `--obsidian` is passed, skip Phase 6's YAML write and instead write to the Obsidian daily note at `~/Red Hat/Work log/{YYYY}/{MM}/{YYYY-MM-DD}.md`.
+By default, output is written to the Obsidian daily note at `~/Red Hat/Work log/{YYYY}/{MM}/{YYYY-MM-DD}.md`. This section describes the format used when `--file` is not provided.
 
 ### File location
 `~/Red Hat/Work log/YYYY/MM/YYYY-MM-DD.md` where YYYY/MM/DD come from `TARGET_DATE`.
