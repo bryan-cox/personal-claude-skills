@@ -23,16 +23,28 @@ Guides writing of behavior-driven Go unit tests that prioritize testing meaningf
 - Covers fake clients, mocking patterns, and envtest guidance for Kubernetes API testing
 - Encourages testing behaviors, not implementation details
 
-### worklog
+### obsidian-vault
 
-Populate worklog from GitHub PR activity and generate biweekly status reports with JIRA updates.
+Provides vault structure, naming conventions, and the canonical daily work log format for an Obsidian vault at `~/Red Hat/`.
 
 **Skills included:**
-- `/update-worklog` — Queries GitHub for all PR activity (authored, reviewed, commented) on a given date and generates worklog.yaml task entries with contextual descriptions, auto-detected JIRA tickets, and inferred status. Supports incremental updates via `last_updated` timestamps.
-- `/status-update` — Generates an HTML work report and posts status comments to JIRA tickets for the current biweekly reporting period (Tuesday/Thursday cycle).
+- `/obsidian-vault` — Reference skill for vault folder structure, note naming, linking conventions, and search/create workflows. Documents the daily log format used by the worklog plugin (`Work log/YYYY/MM/YYYY-MM-DD.md`).
+
+**Related:** The [daily-log-format.md](plugins/obsidian-vault/skills/obsidian-vault/daily-log-format.md) file defines the canonical schema for daily work log notes.
+
+---
+
+### worklog
+
+Populate Obsidian daily notes from GitHub PR activity and generate biweekly status reports with JIRA updates.
+
+**Skills included:**
+- `/update-worklog` — Queries GitHub for all PR activity (authored, reviewed, commented) on a given date and writes structured entries to the Obsidian daily note (`~/Red Hat/Work log/YYYY/MM/YYYY-MM-DD.md`) by default. Supports incremental updates via `last_updated` timestamps. Pass `--file PATH` to write to a worklog.yaml instead.
+- `/status-update` — Generates an HTML work report and posts status comments to JIRA tickets for the current biweekly reporting period (Tuesday/Thursday cycle). Reads from Obsidian daily notes by default; pass `--file PATH` to use a worklog.yaml instead.
 
 **Prerequisites:**
 - GitHub CLI (`gh`) installed and authenticated
+- Obsidian vault at `~/Red Hat/` with `Work log/` folder (see [obsidian-vault](#obsidian-vault) plugin)
 - `/status-update` requires the [taskledger](https://github.com/bryan-cox/taskledger) plugin (invokes `/taskledger:html-report` and `/taskledger:update-jira`)
 - Atlassian JIRA MCP server for posting status comments
 
@@ -45,6 +57,6 @@ Generate Red Hat quarterly connection self-evaluations by analyzing worklog data
 - `/verify-qc` — Fact-checks a quarterly connection document by verifying Jira ticket ownership, PR merge status, numerical claims, and GitHub contribution links against real data. Reports errors, warnings, and unverifiable claims.
 
 **Prerequisites:**
-- Worklog.yaml file (produced by the [worklog](#worklog) plugin's `/update-worklog` skill)
+- Obsidian daily notes or worklog.yaml (produced by the [worklog](#worklog) plugin's `/update-worklog` skill)
 - GitHub CLI (`gh`) installed and authenticated
 - Atlassian JIRA MCP server (for enriching Jira ticket details)
