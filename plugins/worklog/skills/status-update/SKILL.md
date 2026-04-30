@@ -8,12 +8,13 @@ description: Use when generating biweekly work status reports and posting update
 ## Synopsis
 
 ```
-/worklog:status-update [--file PATH]
+/worklog:status-update [--file PATH] [--scrum-repo PATH]
 ```
 
 ## Arguments
 
 - `--file PATH` _(optional)_: Read worklog data from a local YAML file at `PATH` instead of Obsidian. When passed, `--file PATH` is forwarded to both sub-skill invocations. By default (no flag), Obsidian is used.
+- `--scrum-repo PATH` _(optional)_: Path to the local scrum status git repo. Defaults to `~/bryan-cox/scrum-status`.
 
 ## Overview
 
@@ -48,16 +49,18 @@ Find the **most recent Tuesday or Thursday strictly before today**:
      ```
 
 3. **Commit scrum status to repo**:
-   - Generate a scrum status markdown file at `~/bryan-cox/scrum-status/{today}-hypershift-scrum-status.md` following the format of existing files in that repo (JIRA-linked sections with descriptions and PRs under "🦀 Things I've been working on" and "⭐ Things I plan on working on next", plus a "Non-feature work" section and a footer link)
+   - Use the `--scrum-repo` path (default: `~/bryan-cox/scrum-status`)
+   - Derive the GitHub remote URL from the repo's `git remote get-url origin` (e.g., `https://github.com/bryan-cox/scrum-status.git` → `https://github.com/bryan-cox/scrum-status`)
+   - Generate a scrum status markdown file at `{scrum-repo}/{today}-hypershift-scrum-status.md` following the format of existing files in that repo (JIRA-linked sections with descriptions and PRs under "🦀 Things I've been working on" and "⭐ Things I plan on working on next", plus a "Non-feature work" section and a footer link)
    - Only commit the `.md` file — do NOT include `.html`
    - Commit message: `Add HyperShift scrum status report for {today}`
    - Push to remote
 
 4. **Generate Slack summary**:
    Present a Slack-ready summary in paragraph form (not bullet points) with:
-   - `**🦀 Things I've been working on**` header followed by a paragraph summarizing completed and in-progress work, referencing JIRA ticket IDs inline
-   - `**⭐ Things I plan on working on next**` header followed by a paragraph summarizing upcoming work
-   - A footer link: `[Full, detailed status available here](https://github.com/bryan-cox/scrum-status/blob/main/{today}-hypershift-scrum-status.md)`
+   - `**🦀 Things I've been working on**` header followed by a paragraph of **4-5 sentences max**. Prioritize: bug fixes, items that affect the whole team (CI reliability, shared tooling, test infrastructure), and merged PRs. Reference JIRA ticket IDs inline. Omit low-impact or routine items — the full status link covers those.
+   - `**⭐ Things I plan on working on next**` header followed by a short paragraph summarizing upcoming work
+   - A footer link: `[Full, detailed status available here]({github-remote-url}/blob/main/{today}-hypershift-scrum-status.md)` where `{github-remote-url}` is derived from the scrum repo's git remote in step 3
 
 5. **Invoke the Jira update skill**:
    - By default (no `--file` flag):
