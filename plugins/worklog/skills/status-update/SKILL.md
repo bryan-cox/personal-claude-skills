@@ -47,7 +47,19 @@ Find the **most recent Tuesday or Thursday strictly before today**:
      /taskledger:html-report --file {PATH} --start-date {calculated-start-date}
      ```
 
-3. **Invoke the Jira update skill**:
+3. **Commit scrum status to repo**:
+   - Generate a scrum status markdown file at `~/bryan-cox/scrum-status/{today}-hypershift-scrum-status.md` following the format of existing files in that repo (JIRA-linked sections with descriptions and PRs under "🦀 Things I've been working on" and "⭐ Things I plan on working on next", plus a "Non-feature work" section and a footer link)
+   - Only commit the `.md` file — do NOT include `.html`
+   - Commit message: `Add HyperShift scrum status report for {today}`
+   - Push to remote
+
+4. **Generate Slack summary**:
+   Present a Slack-ready summary in paragraph form (not bullet points) with:
+   - `**🦀 Things I've been working on**` header followed by a paragraph summarizing completed and in-progress work, referencing JIRA ticket IDs inline
+   - `**⭐ Things I plan on working on next**` header followed by a paragraph summarizing upcoming work
+   - A footer link: `[Full, detailed status available here](https://github.com/bryan-cox/scrum-status/blob/main/{today}-hypershift-scrum-status.md)`
+
+5. **Invoke the Jira update skill**:
    - By default (no `--file` flag):
      ```
      /taskledger:update-jira --obsidian --start-date {calculated-start-date}
@@ -57,4 +69,4 @@ Find the **most recent Tuesday or Thursday strictly before today**:
      /taskledger:update-jira --file {PATH} --start-date {calculated-start-date}
      ```
 
-4. **Report** the start date used and confirm both steps completed.
+6. **Report** the start date used and confirm all steps completed.
