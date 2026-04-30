@@ -10,7 +10,7 @@ Queries GitHub for all PR activity (authored, reviewed, commented) on a given da
 
 ### `/status-update`
 
-Generates an HTML work report and posts status comments to JIRA tickets for the current biweekly reporting period. Automatically calculates the start date based on a Tuesday/Thursday cycle.
+Generates an HTML work report, commits a scrum status markdown file to a git repo, presents a dolphin-blog-style Slack summary, and posts status comments to JIRA tickets for the current biweekly reporting period. Automatically calculates the start date based on a Tuesday/Thursday cycle. Supports `--scrum-repo PATH` to override the default scrum status repo (`~/bryan-cox/scrum-status`).
 
 ## Prerequisites
 
