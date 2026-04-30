@@ -57,7 +57,7 @@ Find the **most recent Tuesday or Thursday strictly before today**:
    - Push to remote
 
 4. **Generate Slack summary**:
-   Present a Slack-ready summary in paragraph form (not bullet points) with:
+   Present a Slack-ready summary in dolphin blog format — concise, conversational paragraphs (not bullet points) — with:
    - `**🦀 Things I've been working on**` header followed by a paragraph of **4-5 sentences max**. Prioritize: bug fixes, items that affect the whole team (CI reliability, shared tooling, test infrastructure), and merged PRs. Reference JIRA ticket IDs inline. Omit low-impact or routine items — the full status link covers those.
    - `**⭐ Things I plan on working on next**` header followed by a short paragraph summarizing upcoming work
    - A footer link: `[Full, detailed status available here]({github-remote-url}/blob/main/{today}-hypershift-scrum-status.md)` where `{github-remote-url}` is derived from the scrum repo's git remote in step 3
