@@ -1,0 +1,8 @@
+{
+  "name": "grill-with-docs",
+  "description": "Grilling session that challenges plans against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline",
+  "version": "0.1.0",
+  "author": {
+    "name": "github.com/mattpocock"
+  }
+}
