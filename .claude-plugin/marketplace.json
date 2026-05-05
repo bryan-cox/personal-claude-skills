@@ -45,6 +45,12 @@
       "source": "./plugins/tdd",
       "description": "Test-driven development with red-green-refactor loop",
       "version": "0.1.0"
+    },
+    {
+      "name": "jira-pointer",
+      "source": "./plugins/jira-pointer",
+      "description": "Assign story points to Jira issues using the GCP HCP pointing rubric, recursively traversing feature/epic hierarchies",
+      "version": "0.1.0"
     }
   ]
 }

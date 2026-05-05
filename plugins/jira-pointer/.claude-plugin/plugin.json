@@ -1,0 +1,8 @@
+{
+  "name": "jira-pointer",
+  "description": "Point Jira features, epics, stories, and tasks using the GCP HCP story pointing rubric. Recursively traverses issue hierarchies and assigns story points to unpointed issues.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Bryan Cox"
+  }
+}
