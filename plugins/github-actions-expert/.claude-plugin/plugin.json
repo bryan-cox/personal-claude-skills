@@ -1,0 +1,8 @@
+{
+  "name": "github-actions-expert",
+  "description": "Expert guidance for writing, reviewing, debugging, and securing GitHub Actions workflows. Specializes in self-hosted runners (ARC), Prow coexistence, reusable workflows, and OpenShift/HyperShift CI patterns.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Bryan Cox"
+  }
+}

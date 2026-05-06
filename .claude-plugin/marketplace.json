@@ -51,6 +51,12 @@
       "source": "./plugins/jira-pointer",
       "description": "Assign story points to Jira issues using the GCP HCP pointing rubric, recursively traversing feature/epic hierarchies",
       "version": "0.1.0"
+    },
+    {
+      "name": "github-actions-expert",
+      "source": "./plugins/github-actions-expert",
+      "description": "Expert guidance for writing, reviewing, debugging, and securing GitHub Actions workflows with self-hosted runners (ARC) and Prow coexistence",
+      "version": "0.1.0"
     }
   ]
 }
