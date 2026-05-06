@@ -60,3 +60,23 @@ Generate Red Hat quarterly connection self-evaluations by analyzing worklog data
 - Obsidian daily notes or worklog.yaml (produced by the [worklog](#worklog) plugin's `/update-worklog` skill)
 - GitHub CLI (`gh`) installed and authenticated
 - Atlassian JIRA MCP server (for enriching Jira ticket details)
+
+### github-actions-expert
+
+Expert guidance for writing, reviewing, debugging, and securing GitHub Actions workflows. Specializes in self-hosted ARM runners (ARC), Prow coexistence, reusable workflows, and OpenShift/HyperShift CI patterns.
+
+**What it does:**
+- Guides workflow authoring with correct runner labels, timeouts, permissions, and skip logic
+- Security hardening: action pinning (SHA), least-privilege permissions, injection prevention, supply chain review
+- Self-hosted runner expertise: ARC configuration, ARM architecture considerations, ephemeral runners, network policies
+- Prow coexistence: clear separation of concerns between GHA (fast checks) and Prow (E2E, merge queue, chatops)
+- Debugging: check name mismatches, trigger issues, runner troubleshooting
+- Reusable workflows and composite actions patterns
+
+### jira-pointer
+
+Assign story points to Jira issues using the GCP HCP pointing rubric, recursively traversing feature/epic hierarchies.
+
+**What it does:**
+- Given a Feature or Epic, recursively walks the hierarchy and points every unpointed issue
+- Supports `--dry-run`, `--force`, and custom story points field overrides
