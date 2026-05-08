@@ -57,6 +57,12 @@
       "source": "./plugins/github-actions-expert",
       "description": "Expert guidance for writing, reviewing, debugging, and securing GitHub Actions workflows with self-hosted runners (ARC) and Prow coexistence",
       "version": "0.1.0"
+    },
+    {
+      "name": "to-issues",
+      "source": "./plugins/to-issues",
+      "description": "Break a plan into independently-grabbable issues using vertical slices, publishing to Jira, GitHub Issues, Beads, or any tracker",
+      "version": "0.1.0"
     }
   ]
 }

@@ -1,0 +1,8 @@
+{
+  "name": "to-issues",
+  "description": "Break a plan into independently-grabbable GitHub issues using vertical slices (tracer bullets)",
+  "version": "0.1.0",
+  "author": {
+    "name": "github.com/mattpocock"
+  }
+}

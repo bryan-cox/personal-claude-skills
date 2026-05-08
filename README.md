@@ -80,3 +80,16 @@ Assign story points to Jira issues using the GCP HCP pointing rubric, recursivel
 **What it does:**
 - Given a Feature or Epic, recursively walks the hierarchy and points every unpointed issue
 - Supports `--dry-run`, `--force`, and custom story points field overrides
+
+### to-issues
+
+Break a plan into independently-grabbable issues using vertical slices (tracer bullets), then publish them to the tracker of your choice.
+
+**What it does:**
+- Decomposes a plan into thin, end-to-end vertical slices (not horizontal layers)
+- Labels each slice as HITL (needs human input) or AFK (agent-ready)
+- Maps dependency/blocking relationships between slices
+- Asks the user to review and iterate on the breakdown before publishing
+- Creates issues in the user's chosen tracker: Jira, GitHub Issues, Beads, or any other tool
+
+Based on [mattpocock/skills](https://github.com/mattpocock/skills).
