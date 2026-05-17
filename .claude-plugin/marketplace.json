@@ -63,6 +63,12 @@
       "source": "./plugins/to-issues",
       "description": "Break a plan into independently-grabbable issues using vertical slices, publishing to Jira, GitHub Issues, Beads, or any tracker",
       "version": "0.1.0"
+    },
+    {
+      "name": "workday-prep",
+      "source": "./plugins/workday-prep",
+      "description": "Generate a prioritized morning workday report with GitHub PRs and Jira issues grouped by priority",
+      "version": "0.1.0"
     }
   ]
 }
