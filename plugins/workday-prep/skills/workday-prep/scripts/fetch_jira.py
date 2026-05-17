@@ -2,11 +2,57 @@
 """Fetch unresolved Jira issues assigned to current user via acli, output JSON."""
 
 import json
+import os
 import subprocess
 import sys
+from pathlib import Path
 
 
-def run_acli(jql, fields="key,summary,status,priority,labels,updated", limit=200):
+def load_jira_creds():
+    """Load Jira credentials from env vars or ~/.claude.json MCP config."""
+    jira_url = os.environ.get("JIRA_URL")
+    api_token = os.environ.get("JIRA_API_TOKEN")
+    email = os.environ.get("JIRA_USERNAME") or os.environ.get("EMAIL")
+
+    if all([jira_url, api_token, email]):
+        return jira_url, email, api_token
+
+    claude_json = Path.home() / ".claude.json"
+    if claude_json.exists():
+        try:
+            data = json.loads(claude_json.read_text())
+            env = data.get("mcpServers", {}).get("rh-jira", {}).get("env", {})
+            jira_url = jira_url or env.get("JIRA_URL")
+            api_token = api_token or env.get("JIRA_API_TOKEN")
+            email = email or env.get("JIRA_USERNAME")
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    if not all([jira_url, api_token, email]):
+        missing = [v for v, val in [("JIRA_URL", jira_url), ("JIRA_API_TOKEN", api_token), ("JIRA_USERNAME", email)] if not val]
+        print(f"Error: Missing Jira credentials: {', '.join(missing)}", file=sys.stderr)
+        print("Set env vars or configure rh-jira in ~/.claude.json", file=sys.stderr)
+        sys.exit(1)
+
+    return jira_url, email, api_token
+
+
+def login_acli():
+    """Authenticate acli using credentials from env or ~/.claude.json."""
+    jira_url, email, api_token = load_jira_creds()
+    print(f"Authenticating with acli ({email} @ {jira_url})...", file=sys.stderr)
+    result = subprocess.run(
+        ["acli", "jira", "auth", "login", "--site", jira_url, "--email", email, "--token"],
+        input=api_token,
+        capture_output=True, text=True, timeout=30,
+    )
+    if result.returncode != 0:
+        print(f"Error: acli login failed: {result.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+    print("Login successful.", file=sys.stderr)
+
+
+def run_acli(jql, fields="issuetype,key,summary,status,priority", limit=200):
     cmd = [
         "acli", "jira", "workitem", "search",
         "--jql", jql,
@@ -18,10 +64,14 @@ def run_acli(jql, fields="key,summary,status,priority,labels,updated", limit=200
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     if result.returncode != 0:
         if "auth" in result.stderr.lower() or "login" in result.stderr.lower():
-            print("Error: Not authenticated. Run 'acli jira auth login --web' first.", file=sys.stderr)
-            sys.exit(1)
-        print(f"Warning: acli search failed: {result.stderr.strip()}", file=sys.stderr)
-        return []
+            login_acli()
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                print(f"Error: acli search failed after login: {result.stderr.strip()}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            print(f"Warning: acli search failed: {result.stderr.strip()}", file=sys.stderr)
+            return []
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError:

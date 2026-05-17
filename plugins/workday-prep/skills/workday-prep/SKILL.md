@@ -12,7 +12,7 @@ Run `/workday-prep` to generate an HTML report at `/tmp/workday.html` and open i
 ## Prerequisites
 
 - `gh` CLI authenticated (`gh auth status`)
-- `acli` CLI authenticated (`acli jira auth login --web` for OAuth)
+- `acli` CLI with env vars: `JIRA_URL`, `JIRA_API_TOKEN`, `EMAIL` (auto-authenticates on first run)
 
 ## Workflow
 

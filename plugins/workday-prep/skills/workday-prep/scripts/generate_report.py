@@ -107,7 +107,7 @@ def main():
     with open(sys.argv[1]) as f:
         data = json.load(f)
 
-    generated = data.get("generated", datetime.utcnow().isoformat())
+    generated = data.get("generated", datetime.now(tz=None).isoformat())
     groups = data.get("groups", [])
     unlinked = data.get("unlinked_prs", [])
 
