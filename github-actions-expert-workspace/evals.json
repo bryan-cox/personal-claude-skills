@@ -1,0 +1,23 @@
+{
+  "skill_name": "github-actions-expert",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Write a new GitHub Actions workflow for running Go benchmarks on PRs to the hypershift repo. The workflow should run on our self-hosted runners, only trigger when Go source files change, and post benchmark results as a PR comment. The repo uses `make bench` as the benchmark target.",
+      "expected_output": "A complete .github/workflows/benchmark.yaml file using arc-runner-set, path filters, proper permissions, and PR comment posting",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Review this GitHub Actions workflow for security issues:\n\nname: PR Greeter\non: pull_request_target\npermissions: write-all\njobs:\n  greet:\n    runs-on: arc-runner-set\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n      - run: echo \"Hello ${{ github.event.pull_request.title }}! Thanks for contributing.\"\n      - uses: some-org/post-comment@main\n        with:\n          token: ${{ secrets.GITHUB_TOKEN }}\n          body: \"Welcome ${{ github.event.pull_request.user.login }}!\"\n",
+      "expected_output": "Identifies: pull_request_target with checkout of PR head (code injection risk), write-all permissions, unpinned third-party action, command injection via PR title interpolation in run block",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Our GHA lint check keeps showing as 'Expected — Waiting for status to be reported' on PRs even though the workflow runs fine. The workflow file has `name: Lint` at the top and the job is named `lint:` with `name: Run Linters`. Branch protection requires a check called 'Lint'. What's wrong and how do I fix it?",
+      "expected_output": "Explains that the required check name must match the job name ('Run Linters'), not the workflow name ('Lint'). The fix is either renaming the job name to 'Lint' or updating branch protection to require 'Run Linters'.",
+      "files": []
+    }
+  ]
+}

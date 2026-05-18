@@ -1,0 +1,35 @@
+{
+  "run_id": "eval-benchmark-workflow-without_skill",
+  "expectations": [
+    {
+      "text": "Uses arc-runner-set as the runs-on value",
+      "passed": false,
+      "evidence": "Line 25: runs-on: [self-hosted, linux, x64] — uses generic self-hosted labels instead of arc-runner-set"
+    },
+    {
+      "text": "Sets timeout-minutes on the job",
+      "passed": false,
+      "evidence": "No timeout-minutes found in the workflow"
+    },
+    {
+      "text": "Declares explicit permissions block",
+      "passed": true,
+      "evidence": "Lines 14-15: permissions: contents: read, pull-requests: write"
+    },
+    {
+      "text": "Only triggers on Go source file changes",
+      "passed": true,
+      "evidence": "Lines 8-13: paths filter for **.go, go.mod, go.sum, Makefile"
+    },
+    {
+      "text": "Uses make bench as the benchmark command",
+      "passed": true,
+      "evidence": "Line 42: make bench 2>&1 | tee /tmp/bench-pr.txt"
+    },
+    {
+      "text": "Posts benchmark results as a PR comment",
+      "passed": true,
+      "evidence": "Lines 69-120: Uses actions/github-script to post/update PR comment"
+    }
+  ]
+}

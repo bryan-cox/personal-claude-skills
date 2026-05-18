@@ -1,0 +1,112 @@
+name: Go Benchmarks
+
+on:
+  pull_request:
+    branches: [main, release-4.22]
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
+      - "vendor/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: Go Benchmarks
+    runs-on: arc-runner-set
+    timeout-minutes: 45
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check for Go source changes
+        id: changes
+        run: |
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          if echo "$FILES" | grep -qE '\.go$|go\.mod$|go\.sum$|^Makefile$'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run benchmarks on PR branch
+        if: steps.changes.outputs.run == 'true'
+        run: |
+          make bench 2>&1 | tee bench-pr.txt
+
+      - name: Checkout base branch
+        if: steps.changes.outputs.run == 'true'
+        run: |
+          git checkout origin/${{ github.base_ref }}
+
+      - name: Run benchmarks on base branch
+        if: steps.changes.outputs.run == 'true'
+        run: |
+          make bench 2>&1 | tee bench-base.txt
+
+      - name: Compare benchmarks
+        if: steps.changes.outputs.run == 'true'
+        id: benchstat
+        run: |
+          go install golang.org/x/perf/cmd/benchstat@latest
+          RESULT=$(benchstat bench-base.txt bench-pr.txt 2>&1 || true)
+          {
+            echo "result<<BENCH_EOF"
+            echo "$RESULT"
+            echo "BENCH_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post benchmark results as PR comment
+        if: steps.changes.outputs.run == 'true' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BENCHSTAT_RESULT: ${{ steps.benchstat.outputs.result }}
+        run: |
+          COMMENT_MARKER="<!-- benchmark-results -->"
+          BODY=$(cat <<EOF
+          ${COMMENT_MARKER}
+          ## Benchmark Results
+
+          <details>
+          <summary>benchstat comparison (base vs PR)</summary>
+
+          \`\`\`
+          ${BENCHSTAT_RESULT}
+          \`\`\`
+
+          </details>
+
+          **PR head:** \`$(git rev-parse --short HEAD)\`
+          **Base:** \`$(git rev-parse --short origin/${{ github.base_ref }})\`
+          EOF
+          )
+
+          # Find and update existing comment, or create a new one
+          EXISTING_COMMENT_ID=$(gh api \
+            "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq ".[] | select(.body | contains(\"${COMMENT_MARKER}\")) | .id" \
+            2>/dev/null | head -1)
+
+          if [ -n "$EXISTING_COMMENT_ID" ]; then
+            gh api \
+              --method PATCH \
+              "repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}" \
+              -f body="$BODY"
+          else
+            gh api \
+              --method POST \
+              "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+              -f body="$BODY"
+          fi
+
+      - name: Post skip notice
+        if: steps.changes.outputs.run == 'false'
+        run: echo "No Go source changes detected — skipping benchmarks."

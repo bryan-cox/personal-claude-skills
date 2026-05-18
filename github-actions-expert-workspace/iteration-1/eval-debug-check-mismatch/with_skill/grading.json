@@ -1,0 +1,20 @@
+{
+  "run_id": "eval-debug-check-mismatch-with_skill",
+  "expectations": [
+    {
+      "text": "Correctly explains that GitHub uses workflow_name / job_name format for check names",
+      "passed": true,
+      "evidence": "Explains format is <workflow name> / <job name>, shows the actual check is 'Lint / Run Linters'"
+    },
+    {
+      "text": "Suggests a concrete fix",
+      "passed": true,
+      "evidence": "Option A: Update branch protection to require 'Lint / Run Linters'. Option B: Remove job name to get 'Lint / lint'. Both with step-by-step instructions."
+    },
+    {
+      "text": "Does NOT incorrectly claim workflow name alone determines check name",
+      "passed": true,
+      "evidence": "Explicitly states 'the format is always <workflow name> / <job identifier>' and that you cannot get just 'Lint'"
+    }
+  ]
+}

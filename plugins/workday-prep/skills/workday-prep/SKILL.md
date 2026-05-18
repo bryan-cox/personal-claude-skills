@@ -40,11 +40,12 @@ If either script fails with an auth error, instruct the user to authenticate fir
 Read both files and build `/tmp/workday-data.json`:
 
 1. Parse `/tmp/workday-jira.json` — array of `{key, summary, status, priority}`
-2. Parse `/tmp/workday-gh.json` — array of `{url, title, number, repo, isDraft, jira, action}`
+2. Parse `/tmp/workday-gh.json` — array of `{url, title, number, repo, isDraft, jira, action, updatedAt}`
 3. Match PRs to Jira issues by `jira` key
 4. Group by priority: Blocker, Critical, Major, Normal, Minor
 5. Jira issues with no linked PRs get an empty `prs` array
 6. PRs with no Jira match go in `unlinked_prs`
+7. Copy the full Jira issues list into `jira_issues` (only your assigned issues, not issues referenced by other people's PRs)
 
 Write the result matching the JSON format below.
 
@@ -70,7 +71,7 @@ Print: "X PRs to review, Y PRs to follow up, Z Jira issues — report opened in 
           "jira_summary": "Issue title",
           "jira_status": "In Progress",
           "prs": [
-            {"url": "https://github.com/org/repo/pull/1", "title": "PR title", "action": "review", "number": 1, "repo": "org/repo", "isDraft": false}
+            {"url": "https://github.com/org/repo/pull/1", "title": "PR title", "action": "review", "number": 1, "repo": "org/repo", "isDraft": false, "updatedAt": "2026-05-17T09:00:00Z"}
           ]
         }
       ]
@@ -78,6 +79,9 @@ Print: "X PRs to review, Y PRs to follow up, Z Jira issues — report opened in 
   ],
   "unlinked_prs": [
     {"url": "...", "title": "...", "action": "review", "number": 1, "repo": "org/repo", "isDraft": false}
+  ],
+  "jira_issues": [
+    {"key": "PROJ-123", "summary": "Issue title", "status": "In Progress", "priority": "Blocker"}
   ]
 }
 ```

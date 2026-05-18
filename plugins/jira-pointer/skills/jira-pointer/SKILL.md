@@ -59,6 +59,8 @@ For Features and Epics, use `jira_search` with JQL to find children:
 
 Paginate through all results (use `start_at` and `limit`). Collect every issue in the tree.
 
+**Important:** Epics are pointable issues too, not just containers. When traversing a Feature, add each child Epic to the pointable issues list AND traverse into it for its children. The root issue itself (Feature or Epic) is also a candidate for pointing.
+
 ### Step 3: Filter to eligible issues
 
 Skip any issue whose status category is **Done** (e.g., Closed, Resolved). There is no value in retroactively pointing completed work.

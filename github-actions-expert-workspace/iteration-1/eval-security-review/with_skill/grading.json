@@ -1,0 +1,25 @@
+{
+  "run_id": "eval-security-review-with_skill",
+  "expectations": [
+    {
+      "text": "Identifies pull_request_target + checkout of PR head as code injection risk",
+      "passed": true,
+      "evidence": "Finding 1 (CRITICAL): Explains pull_request_target runs in base context with secrets, checkout of head SHA executes untrusted code"
+    },
+    {
+      "text": "Flags write-all permissions as overly broad",
+      "passed": true,
+      "evidence": "Finding 3 (HIGH): Identifies write-all grants every write scope, recommends pull-requests: write"
+    },
+    {
+      "text": "Catches command injection via PR title interpolation in run: block",
+      "passed": true,
+      "evidence": "Finding 2 (CRITICAL): Shows exact injection payload, recommends env variable approach"
+    },
+    {
+      "text": "Flags unpinned third-party action",
+      "passed": true,
+      "evidence": "Finding 4 (MEDIUM): Identifies some-org/post-comment@main as unpinned, recommends SHA pinning"
+    }
+  ]
+}

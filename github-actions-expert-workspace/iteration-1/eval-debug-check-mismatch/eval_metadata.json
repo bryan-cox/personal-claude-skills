@@ -1,0 +1,22 @@
+{
+  "eval_id": 2,
+  "eval_name": "debug-check-mismatch",
+  "prompt": "Our GHA lint check keeps showing as 'Expected — Waiting for status to be reported' on PRs even though the workflow runs fine. The workflow file has name: Lint at the top and the job is named lint: with name: Run Linters. Branch protection requires a check called 'Lint'. What's wrong and how do I fix it?",
+  "assertions": [
+    {
+      "id": "identifies-name-format",
+      "text": "Correctly explains that GitHub uses 'workflow_name / job_name' or just 'job_name' format for the status check name, not the workflow-level name alone",
+      "type": "semantic"
+    },
+    {
+      "id": "provides-fix",
+      "text": "Suggests a concrete fix: rename the job name to match what branch protection expects, or update branch protection to match the actual check name",
+      "type": "semantic"
+    },
+    {
+      "id": "no-wrong-claim",
+      "text": "Does NOT incorrectly claim the workflow top-level name field alone determines the check name shown in branch protection",
+      "type": "semantic"
+    }
+  ]
+}
