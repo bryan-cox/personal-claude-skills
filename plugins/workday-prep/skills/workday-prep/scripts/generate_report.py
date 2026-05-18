@@ -264,7 +264,7 @@ def main():
     review_prs.sort(key=lambda p: priority_sort_key(p["_jira_priority"]))
     followup_prs.sort(key=lambda p: priority_sort_key(p["_jira_priority"]))
 
-    all_jira = [i for i in data.get("jira_issues", []) if (i.get("status", "").lower() not in ("verified", "closed", "done", "resolved"))]
+    all_jira = [i for i in data.get("jira_issues", []) if (i.get("status", "").lower() not in ("verified", "closed", "done", "resolved", "dev complete"))]
     if not all_jira:
         for g in sorted(groups, key=lambda g: priority_sort_key(g["priority"])):
             for item in g.get("items", []):
