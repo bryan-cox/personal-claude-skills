@@ -1,7 +1,7 @@
 {
   "name": "worklog",
   "description": "Populate worklog from GitHub PR activity and generate biweekly status reports with JIRA updates",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "github.com/bryan-cox"
   }
