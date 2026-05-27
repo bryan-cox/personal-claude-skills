@@ -40,8 +40,8 @@ def get_username() -> str:
 
 def date_filter(field: str, date: str, since: str) -> str:
     if since:
-        return f'{field} > "{since}"'
-    return f'{field} | startswith("{date}")'
+        return f'. > "{since}" and startswith("{date}")'
+    return f'startswith("{date}")'
 
 
 def fetch_authored_activity(pr: dict, date: str, since: str, username: str) -> dict:
