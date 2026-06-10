@@ -1,0 +1,8 @@
+{
+  "name": "workday-prep",
+  "description": "Generate a morning workday preparation report from GitHub PRs and Jira issues, grouped by priority",
+  "version": "0.1.3",
+  "author": {
+    "name": "github.com/bryan-cox"
+  }
+}
