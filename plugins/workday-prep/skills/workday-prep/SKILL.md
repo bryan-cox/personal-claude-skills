@@ -35,6 +35,16 @@ python3 {SKILL_DIR}/scripts/fetch_jira.py > /tmp/workday-jira.json
 
 If either script fails with an auth error, instruct the user to authenticate first.
 
+### Phase 1.5: Supplement Jira Data
+
+After both Phase 1 scripts complete, fetch priorities for PR-referenced Jira issues not in the user's assigned set:
+
+```bash
+python3 {SKILL_DIR}/scripts/fetch_jira_supplement.py
+```
+
+This reads both JSON files, finds Jira keys from PRs that aren't in the assigned issues, fetches their priority/status via `acli`, and merges them into `/tmp/workday-jira.json` with `_supplemental: true`.
+
 ### Phase 2: Build Data JSON
 
 Read both files and build `/tmp/workday-data.json`:
@@ -44,8 +54,8 @@ Read both files and build `/tmp/workday-data.json`:
 3. Match PRs to Jira issues by `jira` key
 4. Group by priority: Blocker, Critical, Major, Normal, Minor
 5. Jira issues with no linked PRs get an empty `prs` array
-6. PRs with no Jira match go in `unlinked_prs`
-7. Copy the full Jira issues list into `jira_issues` (only your assigned issues, not issues referenced by other people's PRs)
+6. PRs with no Jira match (no Jira key extracted at all) go in `unlinked_prs`
+7. Copy the Jira issues list into `jira_issues`, excluding any with `_supplemental: true` (only your assigned issues, not issues referenced by other people's PRs)
 
 Write the result matching the JSON format below.
 
