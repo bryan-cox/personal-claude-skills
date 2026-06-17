@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 JIRA_RE = re.compile(r"[A-Z][A-Z0-9]+-\d+")
 
-GH_FIELDS = "number,title,url,state,isDraft,repository,body,updatedAt"
+GH_FIELDS = "number,title,url,state,isDraft,repository,body,updatedAt,author"
 
 
 def run_gh_search(flag: str, date: str) -> list[dict]:
@@ -62,6 +62,7 @@ def main():
             url = pr["url"]
             if url not in merged:
                 repo = pr.get("repository", {})
+                author = pr.get("author", {})
                 merged[url] = {
                     "url": url,
                     "number": pr["number"],
@@ -72,15 +73,25 @@ def main():
                     "jira": extract_jira(pr),
                     "sources": [],
                     "updatedAt": pr.get("updatedAt", ""),
+                    "author": author.get("login", ""),
                 }
             if label not in merged[url]["sources"]:
                 merged[url]["sources"].append(label)
 
+    username = ""
+    for pr in merged.values():
+        if "authored" in pr["sources"] and pr.get("author"):
+            username = pr["author"]
+            break
+
     output = list(merged.values())
-    if args.since:
-        print(json.dumps({"since": args.since, "prs": output}))
-    else:
-        print(json.dumps({"since": "", "prs": output}))
+    for pr in output:
+        pr.pop("author", None)
+
+    result = {"since": args.since or "", "prs": output}
+    if username:
+        result["username"] = username
+    print(json.dumps(result))
 
 
 if __name__ == "__main__":

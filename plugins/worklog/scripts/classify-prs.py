@@ -142,7 +142,7 @@ def main():
     since = data.get("since", args.since)
     prs = data["prs"]
 
-    username = get_username()
+    username = data.get("username") or get_username()
 
     authored = [p for p in prs if "authored" in p["sources"]]
     non_authored = [p for p in prs if "authored" not in p["sources"]]
