@@ -48,7 +48,12 @@ def fetch_authored_activity(pr: dict, date: str, since: str, username: str) -> d
     repo = pr["repo"]
     num = pr["number"]
 
-    commits_jq = f'[.[] | select(.commit.author.date | {date_filter(".", date, since)}) | .commit.message]'
+    author_filt = date_filter(".", date, since)
+    committer_filt = date_filter(".", date, since)
+    commits_jq = (
+        f'[.[] | select((.commit.author.date | {author_filt}) or (.commit.committer.date | {committer_filt}))'
+        f' | .commit.message]'
+    )
     reviews_jq = f'[.[] | select(.submitted_at | {date_filter(".", date, since)}) | {{user: .user.login, state: .state}}]'
     comments_jq = (
         f'[.[] | select(.user.login == "{username}") '
