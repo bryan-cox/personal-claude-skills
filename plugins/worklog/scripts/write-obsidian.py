@@ -229,6 +229,9 @@ def main():
 
     if existing:
         content = LAST_UPDATED_RE.sub(f"*Last updated: {timestamp}*", existing)
+        if f"*Last updated: {timestamp}*" not in content:
+            heading_end = content.index("\n") + 1
+            content = content[:heading_end] + f"\n*Last updated: {timestamp}*\n" + content[heading_end:]
         work_marker = "## 🦀 Work"
         if work_marker in content:
             idx = content.index(work_marker) + len(work_marker)
