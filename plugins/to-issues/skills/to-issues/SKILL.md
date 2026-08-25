@@ -1,3 +1,8 @@
+---
+name: to-issues
+description: Break a plan into independently-grabbable issues using vertical slices (tracer bullets), then publish them to Jira, GitHub Issues, Beads, or another issue tracker.
+---
+
 # To Issues
 
 Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
