@@ -1,0 +1,8 @@
+{
+  "name": "hypershift-presubmit-report",
+  "description": "Generate pass/fail health reports for openshift/hypershift presubmit CI jobs from Prow",
+  "version": "0.1.0",
+  "author": {
+    "name": "github.com/bryan-cox"
+  }
+}

@@ -1,14 +1,18 @@
 # personal-claude-skills
 
-A place for me to share personal Claude Code skills I use on a daily basis that might help others as well but I don't want to merge them into a formal repo just yet.
+A place to share personal agent skills I use daily. Skills are distributed as Claude Code plugins and, where compatible, as portable Agent Skills for other coding agents.
 
-## Installation
+## Claude Code Plugin Installation
 
 1. Open Claude Code and run `/plugin`
 2. Select **Add marketplace**
 3. Enter the repository URL: `https://github.com/bryan-cox/personal-claude-skills`
 4. Select **Install plugin**
 5. Choose the plugin you want to install
+
+## Agent Skills Installation
+
+The skills also use the standard `SKILL.md` Agent Skills format. Clone this repository and run `./scripts/link-skills.sh` to link skills into `~/.agents/skills` (for Pi, OpenCode, and GitHub Copilot CLI) and `~/.claude/skills` (for Claude Code).
 
 ## Available Plugins
 
@@ -72,6 +76,16 @@ Expert guidance for writing, reviewing, debugging, and securing GitHub Actions w
 - Prow coexistence: clear separation of concerns between GHA (fast checks) and Prow (E2E, merge queue, chatops)
 - Debugging: check name mismatches, trigger issues, runner troubleshooting
 - Reusable workflows and composite actions patterns
+
+### hypershift-presubmit-report
+
+Generate pass/fail health reports for `openshift/hypershift` presubmit CI jobs from the Prow API.
+
+**What it does:**
+- Summarizes overall pass rate and per-job success, failure, and abort counts
+- Links recent failures to their Prow runs and pull requests
+- Produces HTML, Markdown, or JSON reports over a configurable time range
+- Uses Python's standard library and the public Prow API; no authentication is required
 
 ### jira-pointer
 

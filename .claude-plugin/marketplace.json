@@ -69,6 +69,12 @@
       "source": "./plugins/workday-prep",
       "description": "Generate a prioritized morning workday report with GitHub PRs and Jira issues grouped by priority",
       "version": "0.1.0"
+    },
+    {
+      "name": "hypershift-presubmit-report",
+      "source": "./plugins/hypershift-presubmit-report",
+      "description": "Generate pass/fail health reports for openshift/hypershift presubmit CI jobs from Prow",
+      "version": "0.1.0"
     }
   ]
 }
