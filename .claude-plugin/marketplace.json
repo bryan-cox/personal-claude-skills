@@ -23,27 +23,9 @@
       "version": "0.2.0"
     },
     {
-      "name": "grill-me",
-      "source": "./plugins/grill-me",
-      "description": "Interview the user relentlessly about a plan or design until reaching shared understanding",
-      "version": "0.1.0"
-    },
-    {
       "name": "obsidian-vault",
       "source": "./plugins/obsidian-vault",
       "description": "Search, create, and manage notes in the Obsidian vault",
-      "version": "0.1.0"
-    },
-    {
-      "name": "grill-with-docs",
-      "source": "./plugins/grill-with-docs",
-      "description": "Grilling session that challenges plans against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline",
-      "version": "0.1.0"
-    },
-    {
-      "name": "tdd",
-      "source": "./plugins/tdd",
-      "description": "Test-driven development with red-green-refactor loop",
       "version": "0.1.0"
     },
     {
@@ -56,12 +38,6 @@
       "name": "github-actions-expert",
       "source": "./plugins/github-actions-expert",
       "description": "Expert guidance for writing, reviewing, debugging, and securing GitHub Actions workflows with self-hosted runners (ARC) and Prow coexistence",
-      "version": "0.1.0"
-    },
-    {
-      "name": "to-issues",
-      "source": "./plugins/to-issues",
-      "description": "Break a plan into independently-grabbable issues using vertical slices, publishing to Jira, GitHub Issues, Beads, or any tracker",
       "version": "0.1.0"
     },
     {
