@@ -51,7 +51,7 @@ Find the **most recent Tuesday or Thursday strictly before today**:
 3. **Commit scrum status to repo**:
    - Use the `--scrum-repo` path (default: `~/bryan-cox/scrum-status`)
    - Derive the GitHub remote URL from the repo's `git remote get-url origin` (e.g., `https://github.com/bryan-cox/scrum-status.git` → `https://github.com/bryan-cox/scrum-status`)
-   - Generate a scrum status markdown file at `{scrum-repo}/{today}-hypershift-scrum-status.md` following the format of existing files in that repo (JIRA-linked sections with descriptions and PRs under "🦀 Things I've been working on" and "⭐ Things I plan on working on next", plus a "Non-feature work" section and a footer link)
+   - Generate a scrum status markdown file at `{scrum-repo}/{today}-hypershift-scrum-status.md` following the format of existing files in that repo (JIRA-linked sections with descriptions and PRs under "🦀 Things I've been working on" and "⭐ Things I plan on working on next", a "Code Reviews" section listing reviewed/commented PRs with total count for the period, plus a "Non-feature work" / "CI Infrastructure" section and a footer link)
    - Only commit the `.md` file — do NOT include `.html`
    - Commit message: `Add HyperShift scrum status report for {today}`
    - Push to remote
