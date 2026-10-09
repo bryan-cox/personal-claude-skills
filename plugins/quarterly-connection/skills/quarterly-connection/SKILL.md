@@ -139,7 +139,7 @@ Also search for tickets the employee reported (for aggregate stats only, not acc
 
 This catches tickets not tracked in the selected work history (e.g., bugs fixed quickly without a note, tickets verified but not logged).
 
-Use the Jira MCP tools if available, otherwise note that manual enrichment is needed.
+Use Jira MCP tools when available. If they are not exposed in the current session, check an existing authenticated Jira CLI or configured REST integration before declaring Jira access unavailable. Use existing credentials only for the requested Jira operations, keep them in memory, and never print or store tokens in reports. If no authenticated route works, identify the missing access and mark Jira enrichment as incomplete.
 
 ```
 For each unique Jira ticket from both sources:
@@ -165,8 +165,11 @@ Flag tickets with priority Blocker, Critical, or Major for special highlighting 
 
 Calculate aggregate Jira stats:
 - Total tickets reported by the employee during the quarter
-- Total tickets closed/resolved by the employee during the quarter
-- Total tickets verified by the employee during the quarter
+- Total tickets assigned to the employee that resolved during the quarter (label this as assigned/resolved, not personally closed)
+- Total distinct tickets closed/resolved by the employee's own status transitions during the quarter
+- Total distinct tickets verified by the employee's own status transitions during the quarter
+
+Verify transition authors and exact timestamps from paginated changelog events. Current assignment and an issue's updated timestamp alone do not prove who closed or verified it. Reconstruct quarter-end status when the current status includes later changes. Use the start of the following day as the exclusive end bound for timestamp-based searches.
 
 Group accomplishment tickets by:
 1. Priority level
@@ -215,10 +218,15 @@ Analyze all code-review entries in the selected source between {start_date} and 
 
 Extract every PR URL reviewed or commented on and preserve the action type.
 
+Cross-check GitHub directly rather than treating daily-note counts as exhaustive. Search `is:pr reviewed-by:{username} updated:>={start_date}`, then fetch every candidate PR's paginated review events. Keep events authored by the employee and submitted within the exact quarter range. A search's updated date is only a candidate filter, not proof of a review date. Verify PR authors and exclude reviews on the employee's own PRs from the peer-review count.
+
 Calculate:
-- Total PRs reviewed
+- Total distinct other-authored PRs reviewed during the quarter
+- Total submitted peer-review events, separately from distinct PRs
 - Unique repositories reviewed
 - Review frequency (reviews per week)
+
+Report comment-only activity separately; do not label it a submitted review. Deduplicate repeated reviews and comments by PR URL for distinct-PR metrics, and call out coverage limitations if any review pages or repository searches are incomplete.
 
 Save results to a file.
 ```
@@ -369,9 +377,11 @@ If previous quarterly connections were provided, match their style. Otherwise, f
 - **Dash-prefixed bullets** (`- ` not `*` or numbered lists) for individual accomplishments
 - **Jira ticket IDs inline in parentheses**: "Fixed the ExternalDNS deletion race condition (CNTRLPLANE-1857)"
 - **Active voice, past tense** for accomplishments: "Implemented X enabling Y" not "X was implemented"
+- **Requested narrative perspective**: honor first- or third-person wording requested by the employee, even when prior quarterly connections use a different perspective
 - **Impact-oriented framing**: every bullet should convey both what was done and why it mattered
 - **Quantified metrics** where possible: PR counts, ticket counts, specific dates
 - **Confident but not boastful tone** — let the work speak for itself
+- Keep source-analysis commentary and verification caveats in a separate supporting report, not in the accomplishment narrative. State accomplishments directly rather than describing what the worklog or API says.
 
 ## Phase 5: Review and Refine
 
