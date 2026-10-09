@@ -1,11 +1,11 @@
 ---
 name: quarterly-connection
-description: Use when writing a Red Hat quarterly connection self-evaluation, preparing a performance review, or when the user mentions "quarterly connection", "quarterly review", "self-evaluation", "quarterly self-assessment", or "performance review". Also trigger when the user wants to summarize a quarter's worth of work into a performance document, or asks to analyze their worklog for review purposes.
+description: Use when writing a Red Hat quarterly connection self-evaluation, preparing a performance review, or when the user mentions "quarterly connection", "quarterly review", "self-evaluation", "quarterly self-assessment", or "performance review". Also trigger when the user wants to summarize a quarter's work from Obsidian daily work logs or a worklog.yaml file.
 ---
 
 # Red Hat Quarterly Connection
 
-Generate a comprehensive quarterly connection self-evaluation for a Red Hat software engineer. This document directly impacts the employee's performance rating and bonus, so thoroughness and accuracy are essential. The skill analyzes worklog data, Jira tickets, GitHub PRs, and code reviews to produce a well-organized self-evaluation in markdown.
+Generate a comprehensive quarterly connection self-evaluation for a Red Hat software engineer. This document directly impacts the employee's performance rating and bonus, so thoroughness and accuracy are essential. The skill analyzes Obsidian daily work logs by default, with optional legacy worklog.yaml support, plus Jira tickets, GitHub PRs, and code reviews.
 
 The questions change each quarter, so the skill asks the employee for the exact questions they need to answer and structures the output around those. Previous quarterly connections (if provided) inform style and tone — not structure.
 
@@ -31,17 +31,17 @@ Review with Employee & Refine
 
 Before any analysis, collect all required information from the employee. Ask for each of these **one at a time** to avoid overwhelming the user. Use the AskUserQuestion tool where appropriate, but for open-ended items just ask directly.
 
-### 1.1 Worklog File
+### 1.1 Work History Source
 
-Ask: "What is the path to your worklog.yaml file?"
+Ask: "What is the path to your Obsidian Work log folder or worklog.yaml file?"
 
-Default to `~/worklog/worklog.yaml` if the user confirms or doesn't specify.
+Default to `~/Red Hat/Work log/` if the user confirms or doesn't specify. Obsidian notes use `YYYY/MM/YYYY-MM-DD.md`. Accept a vault root, `Work log` folder, year/month folder, an individual daily note, or a legacy `worklog.yaml` file. Use the date range to select the relevant daily notes.
 
 ### 1.2 Quarter Date Range
 
 Ask: "What date range does this quarterly connection cover? (e.g., 2026-01-01 to 2026-03-31)"
 
-Use this to filter worklog entries to only the relevant quarter.
+Use this to filter Obsidian daily notes or legacy YAML entries to the relevant quarter.
 
 ### 1.3 Quarterly Goals
 
@@ -63,9 +63,9 @@ Reward Zone awards are peer recognition at Red Hat. They provide strong evidence
 
 ### 1.6 Previous Quarterly Connections
 
-Ask: "Do you have any previous quarterly connections I can reference for tone, format, and style? If so, please provide the file path(s)."
+Ask: "Do you have previous quarterly connections I can reference for tone and style? You can provide file paths, attach the documents, or paste the text."
 
-If provided, read them and use them as reference for:
+If provided as a path, attachment, or pasted text, read them and use them as reference for:
 - Writing style and tone
 - Level of detail expected
 - How accomplishments are grouped and framed
@@ -89,12 +89,21 @@ This is the final catch-all. Everything the employee says here gets incorporated
 
 After gathering all inputs, launch parallel subagents (model: opus) to investigate different data sources simultaneously. This phase is about extracting and enriching the raw data before organizing it.
 
-### 2.1 Subagent: Worklog Analysis
+### 2.1 Subagent: Work History Analysis
 
 ```
-Analyze the worklog.yaml file at {worklog_path}.
+Analyze the selected work-history source at {work_history_path}.
 
 Filter to entries between {start_date} and {end_date} inclusive.
+
+If the source is Obsidian:
+- Read daily notes matching `YYYY/MM/YYYY-MM-DD.md` within the date range. Select by the date in the filename and confirm it matches the `# Daily Log · YYYY-MM-DD` heading.
+- In each note, parse task sections under `## Work`. Capture the task heading, Jira key, all `**PR:**` URLs, status, descriptions, `**Next:**` text, and explicit merge or close notes.
+- Parse each `### Code Reviews` section. Separate `Reviewed` from `Commented on` URLs, then deduplicate URLs across dates while retaining both action types.
+- Merge repeated Jira tasks and PR references across notes. Keep distinct descriptions and use the latest status recorded within the date range. A task marked `Completed` does not prove every linked PR merged; require an explicit merge note or verify against GitHub.
+- Count distinct dated notes containing work, not repeated entries as extra days.
+
+If the source is legacy `worklog.yaml`, extract the equivalent task and review fields from its entries.
 
 For each task entry, extract:
 - Date
@@ -105,11 +114,11 @@ For each task entry, extract:
 - Blockers
 
 Produce a structured summary:
-1. Total working days logged
+1. Total distinct workdays logged
 2. List of all unique Jira tickets worked on, with aggregated descriptions across all days
 3. List of all GitHub PRs authored, with their final status
-4. List of all code reviews performed (entries with jira_ticket "Reviewing Pull Requests")
-5. Count of PRs merged (exclude closed-without-merge), PRs reviewed
+4. List of all PRs reviewed and commented on, grouped by action
+5. Count of PRs explicitly noted as merged (exclude closed-without-merge) and unique PRs reviewed
 6. Any blockers mentioned
 
 Save the structured summary to a file.
@@ -119,7 +128,7 @@ Save the structured summary to a file.
 
 Discover tickets from TWO sources and merge into a single deduplicated list:
 
-**Source 1: Worklog** — Extract all unique Jira ticket IDs from the worklog entries.
+**Source 1: Work history** — Extract all unique Jira ticket IDs from the selected Obsidian notes or legacy worklog.yaml entries.
 
 **Source 2: Jira API** — Search Jira directly for tickets assigned to or resolved by the employee during the quarter:
 - `assignee = {jira_username} AND resolved >= {start_date} AND resolved <= {end_date}`
@@ -128,7 +137,7 @@ Discover tickets from TWO sources and merge into a single deduplicated list:
 Also search for tickets the employee reported (for aggregate stats only, not accomplishments):
 - `reporter = {jira_username} AND created >= {start_date} AND created <= {end_date}`
 
-This catches tickets not tracked in the worklog (e.g., bugs fixed quickly without a worklog entry, tickets verified but not logged).
+This catches tickets not tracked in the selected work history (e.g., bugs fixed quickly without a note, tickets verified but not logged).
 
 Use the Jira MCP tools if available, otherwise note that manual enrichment is needed.
 
@@ -147,12 +156,12 @@ Use the jira_get_issue MCP tool to fetch:
 
 Ownership rules for including a ticket as an accomplishment:
 - Include if the employee is/was the assignee
-- Include if unassigned but the worklog shows substantial authored work (PRs merged, etc.) — flag for employee to confirm
-- Exclude if someone else is the assignee, UNLESS the worklog shows the employee did significant work on it (e.g., backported a fix) — in that case, reframe the accomplishment to describe the employee's specific contribution, not the ticket itself
+- Include if unassigned but the work history shows substantial authored work (PRs merged, etc.) — flag for employee to confirm
+- Exclude if someone else is the assignee, UNLESS the work history shows the employee did significant work on it (e.g., backported a fix) — in that case, reframe the accomplishment to describe the employee's specific contribution, not the ticket itself
 
-Reporter-only tickets (employee reported but someone else is assignee and no worklog work): count toward "tickets reported" aggregate stat but do NOT include as accomplishments.
+Reporter-only tickets (employee reported but someone else is assignee and no recorded work): count toward "tickets reported" aggregate stat but do NOT include as accomplishments.
 
-Flag tickets with priority Blocker, Critical, or Major for special highlighting in the report.
+Flag tickets with priority Blocker, Critical, or Major for special highlighting when Jira data confirms that priority. Mark unavailable Jira fields as unverified rather than inferring them from task status or PR titles.
 
 Calculate aggregate Jira stats:
 - Total tickets reported by the employee during the quarter
@@ -170,13 +179,13 @@ Save results to a file.
 
 Discover PRs from TWO sources and merge into a single deduplicated list:
 
-**Source 1: Worklog** — Extract ALL unique repository URLs from every github_pr field in the worklog for the quarter. Do not hardcode or assume a list of repos.
+**Source 1: Work history** — Extract ALL unique repository URLs from `**PR:**` lines in Obsidian notes or `github_pr` fields in legacy worklog.yaml entries for the quarter. Do not hardcode or assume a list of repos.
 
-**Source 2: GitHub API** — For every repo discovered in the worklog, AND as a broad catch-all, query GitHub directly for all merged PRs by the employee during the quarter:
+**Source 2: GitHub API** — For every repo discovered in the work history, AND as a broad catch-all, query GitHub directly for all merged PRs by the employee during the quarter:
 - Per repo: `gh pr list --repo {org}/{repo} --author {username} --state merged --search "merged:{start_date}..{end_date}" --limit 200`
-- Broad search: `gh search prs --author {username} --merged "{start_date}..{end_date}" --limit 200` to discover repos not in the worklog
+- Broad search: `gh search prs --author {username} --merged --merged-at "{start_date}..{end_date}" --limit 1000` to discover repos not in the work history
 
-This catches PRs not tracked in the worklog (e.g., quick fixes, dependency bumps, or work in repos the employee forgot to log).
+This catches PRs not tracked in the work history (e.g., quick fixes, dependency bumps, or work in repos the employee forgot to log).
 
 ```
 For each unique PR from both sources:
@@ -202,9 +211,9 @@ Save results to a file.
 ### 2.4 Subagent: Code Review Analysis
 
 ```
-Analyze all "Reviewing Pull Requests" entries from the worklog between {start_date} and {end_date}.
+Analyze all code-review entries in the selected source between {start_date} and {end_date}. For Obsidian, use each daily note's `### Code Reviews` section. For legacy worklog.yaml, use entries with jira_ticket "Reviewing Pull Requests".
 
-Extract every PR URL reviewed or commented on.
+Extract every PR URL reviewed or commented on and preserve the action type.
 
 Calculate:
 - Total PRs reviewed
@@ -219,7 +228,7 @@ Save results to a file.
 Only launch this if the employee provided previous quarterly connections.
 
 ```
-Read the previous quarterly connection(s) at {file_paths}.
+Read the previous quarterly connection(s) from the paths, attachments, or pasted text supplied by the employee.
 
 Analyze:
 - Writing style and tone
@@ -295,6 +304,8 @@ For each question from section 1.4:
 2. If answerable: draft a thorough response using the synthesized data, organized with theme headers and dash-prefixed bullets where the content warrants it
 3. If partially answerable: draft what you can and mark remaining gaps with `<!-- NEEDS INPUT: [specific guidance on what's needed] -->`
 4. If the question is purely subjective/personal (e.g., about feelings, career aspirations, energy): mark with `<!-- NEEDS INPUT: This question requires your personal reflection. -->` and include any relevant data points from the quarter that might help the employee reflect (e.g., blockers encountered, rewarding themes, reward zone awards)
+
+For forward-looking questions such as "What are your top priorities for this quarter?", use ongoing work only to suggest candidate priorities. Mark them for employee confirmation rather than presenting inferred priorities as commitments.
 
 ## Phase 4: Generate the Quarterly Connection Document
 

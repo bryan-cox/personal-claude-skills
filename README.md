@@ -54,14 +54,14 @@ Populate Obsidian daily notes from GitHub PR activity and generate biweekly stat
 
 ### quarterly-connection
 
-Generate Red Hat quarterly connection self-evaluations by analyzing worklog data, Jira tickets, GitHub PRs, and code reviews.
+Generate Red Hat quarterly connection self-evaluations by analyzing Obsidian daily work logs by default, with optional legacy worklog.yaml support, plus Jira tickets, GitHub PRs, and code reviews.
 
 **Skills included:**
-- `/quarterly-connection` — Interactively gathers your quarterly goals, self-evaluation questions, reward zone awards, and work history, then uses parallel agents to analyze your worklog.yaml, enrich Jira tickets, and summarize GitHub activity. Produces a well-organized markdown self-evaluation with work mapped to themes, high-priority items highlighted, and unanswerable questions flagged for your input.
+- `/quarterly-connection` — Interactively gathers your quarterly goals, self-evaluation questions, reward zone awards, and work history, then uses parallel agents to analyze Obsidian daily notes by default or a legacy worklog.yaml, enrich Jira tickets, and summarize GitHub activity. Produces a markdown self-evaluation with work grouped by themes, verified high-priority items highlighted, and unanswered questions flagged for your input.
 - `/verify-qc` — Fact-checks a quarterly connection document by verifying Jira ticket ownership, PR merge status, numerical claims, and GitHub contribution links against real data. Reports errors, warnings, and unverifiable claims.
 
 **Prerequisites:**
-- Obsidian daily notes or worklog.yaml (produced by the [worklog](#worklog) plugin's `/update-worklog` skill)
+- Obsidian daily notes at `~/Red Hat/Work log/YYYY/MM/YYYY-MM-DD.md` (default), or an optional legacy worklog.yaml file
 - GitHub CLI (`gh`) installed and authenticated
 - Atlassian JIRA MCP server (for enriching Jira ticket details)
 

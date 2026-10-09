@@ -20,7 +20,7 @@
       "name": "quarterly-connection",
       "source": "./plugins/quarterly-connection",
       "description": "Generate Red Hat quarterly connection self-evaluations by analyzing worklog data, Jira tickets, GitHub PRs, and code reviews",
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
     {
       "name": "obsidian-vault",
