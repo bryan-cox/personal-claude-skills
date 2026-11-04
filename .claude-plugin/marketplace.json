@@ -44,7 +44,7 @@
       "name": "workday-prep",
       "source": "./plugins/workday-prep",
       "description": "Generate a prioritized morning workday report with GitHub PRs and Jira issues grouped by priority",
-      "version": "0.1.0"
+      "version": "0.1.4"
     },
     {
       "name": "hypershift-presubmit-report",

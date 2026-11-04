@@ -9,6 +9,13 @@ description: Generate a prioritized morning workday report with GitHub PRs and J
 
 Run `/workday-prep` to generate an HTML report at `/tmp/workday.html` and open it in the browser.
 
+Each row has a checkbox. Checking one dims and strikes the row, and the same item
+stays in sync between the Top Priorities table and its tab. Check state is scoped
+to a single report build (`localStorage` key `workday-prep-done:<generated>`), so
+**every new run starts unchecked**; refreshing the same page keeps your marks.
+Stale keys from earlier runs are pruned on load. If `localStorage` is unavailable
+(Safari on `file://`), checkboxes still work for the life of the page.
+
 ## Prerequisites
 
 - `gh` CLI authenticated (`gh auth status`)
@@ -35,6 +42,11 @@ python3 {SKILL_DIR}/scripts/fetch_jira.py > /tmp/workday-jira.json
 
 If either script fails with an auth error, instruct the user to authenticate first.
 
+If `fetch_github.py` exits non-zero, a GitHub query failed and it wrote **no**
+output (it already retries once internally). Re-run the fetch. Never build a
+report from a partial or stale `/tmp/workday-gh.json` — a failed query would
+otherwise render as an empty review queue, indistinguishable from a quiet day.
+
 ### Phase 1.5: Supplement Jira Data
 
 After both Phase 1 scripts complete, fetch priorities for PR-referenced Jira issues not in the user's assigned set:
@@ -47,7 +59,11 @@ This reads both JSON files, finds Jira keys from PRs that aren't in the assigned
 
 ### Phase 2: Build Data JSON
 
-Read both files and build `/tmp/workday-data.json`:
+```bash
+python3 {SKILL_DIR}/scripts/build_data.py
+```
+
+Reads both Phase 1 files and writes `/tmp/workday-data.json`. It:
 
 1. Parse `/tmp/workday-jira.json` — array of `{key, summary, status, priority}`
 2. Parse `/tmp/workday-gh.json` — array of `{url, title, number, repo, isDraft, jira, action, updatedAt}`
@@ -59,10 +75,28 @@ Read both files and build `/tmp/workday-data.json`:
 
 Write the result matching the JSON format below.
 
+### Skip a duplicate scheduled run
+
+If this run was triggered by a schedule rather than an explicit user request, and
+the newest `/tmp/workday-*.html` archive is less than 60 minutes old, **skip the
+whole workflow** and tell the user the existing report is still current. This
+stops a scheduled run from duplicating — and re-opening, and wiping the marks in —
+a report the user is actively working in. An explicit request always runs.
+
 ### Phase 3: Generate and Open
 
 ```bash
 python3 {SKILL_DIR}/scripts/generate_report.py /tmp/workday-data.json /tmp/workday.html && open /tmp/workday.html
+```
+
+`generate_report.py` also writes a timestamped copy (`/tmp/workday-YYYY-MM-DD-HHMM.html`,
+newest 30 kept) because `/tmp/workday.html` is overwritten on every run — the
+archive is the only evidence a given run happened.
+
+Then send a desktop notification so a scheduled run is never silently missed:
+
+```bash
+osascript -e 'display notification "X PRs to review, Y to follow up, Z Jira issues" with title "Workday Prep" sound name "Glass"'
 ```
 
 Print: "X PRs to review, Y PRs to follow up, Z Jira issues — report opened in browser"

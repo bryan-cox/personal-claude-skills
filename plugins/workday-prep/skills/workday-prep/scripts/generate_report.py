@@ -2,9 +2,11 @@
 """Generate a tabbed Bootstrap 5 HTML workday report from workday-data.json."""
 
 import json
+import os
+import glob
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 PRIORITY_ORDER = ["Blocker", "Critical", "Major", "Normal", "Minor"]
 
@@ -67,6 +69,12 @@ def status_badge(status):
     return f'<span class="badge bg-{cls}">{status}</span>'
 
 
+def checkbox_cell(key):
+    """Checkbox input whose state persists across report regenerations."""
+    return ('<input type="checkbox" class="form-check-input task-check" '
+            f'data-key="{key}" aria-label="Mark done">')
+
+
 def render_pr_groups(prs):
     if not prs:
         return '<p class="text-muted mt-3">No PRs in this category.</p>'
@@ -99,7 +107,8 @@ def render_pr_groups(prs):
                 jira_url = f"https://issues.redhat.com/browse/{jira_key}"
                 jira_cell = f'<a href="{jira_url}" target="_blank" title="{jira_key}" class="text-decoration-none"><img src="https://issues.redhat.com/favicon.ico" alt="" style="width:14px;height:14px;vertical-align:text-bottom"> {jira_key}</a>'
 
-            rows.append(f"""        <tr>
+            rows.append(f"""        <tr data-key="pr:{url}">
+          <td class="text-center">{checkbox_cell(f"pr:{url}")}</td>
           <td class="text-nowrap">{ICON_GH} {repo}</td>
           <td><a href="{url}" target="_blank" class="text-decoration-none">{ICON_PR} #{num} {title}</a>{draft}</td>
           <td class="text-nowrap">{jira_cell}</td>
@@ -114,7 +123,7 @@ def render_pr_groups(prs):
   <div class="card-body p-0">
     <table class="table table-hover table-fixed align-middle mb-0">
       <thead class="table-light">
-        <tr><th style="width:15%">Repo <span class="sort-arrow">&#9650;</span></th><th style="width:55%">Pull Request <span class="sort-arrow">&#9650;</span></th><th style="width:18%">Jira <span class="sort-arrow">&#9650;</span></th><th style="width:12%">Updated <span class="sort-arrow">&#9650;</span></th></tr>
+        <tr><th class="text-center" style="width:3%"></th><th style="width:14%">Repo <span class="sort-arrow">&#9650;</span></th><th style="width:53%">Pull Request <span class="sort-arrow">&#9650;</span></th><th style="width:18%">Jira <span class="sort-arrow">&#9650;</span></th><th style="width:12%">Updated <span class="sort-arrow">&#9650;</span></th></tr>
       </thead>
       <tbody>
 {"".join(rows)}
@@ -136,7 +145,7 @@ def render_top_priorities(review_prs, followup_prs, jira_issues, limit=8):
             jira_keys_with_prs.add(jira_key)
         items.append((priority_sort_key(p), p, "review",
             f'{ICON_PR} <a href="{pr.get("url","")}" target="_blank" class="text-decoration-none">#{pr.get("number","")} {pr.get("title","")}</a>',
-            "Review PR"))
+            "Review PR", f'pr:{pr.get("url","")}'))
     for pr in followup_prs:
         p = pr.get("_jira_priority", "") or "Uncategorized"
         jira_key = pr.get("_jira_key", "")
@@ -144,7 +153,7 @@ def render_top_priorities(review_prs, followup_prs, jira_issues, limit=8):
             jira_keys_with_prs.add(jira_key)
         items.append((priority_sort_key(p), p, "followup",
             f'{ICON_PR} <a href="{pr.get("url","")}" target="_blank" class="text-decoration-none">#{pr.get("number","")} {pr.get("title","")}</a>',
-            "Follow up"))
+            "Follow up", f'pr:{pr.get("url","")}'))
     for issue in jira_issues:
         key = issue.get("key", "")
         if key in jira_keys_with_prs:
@@ -152,7 +161,7 @@ def render_top_priorities(review_prs, followup_prs, jira_issues, limit=8):
         p = issue.get("priority", "Normal")
         items.append((priority_sort_key(p), p, "jira",
             f'<a href="https://issues.redhat.com/browse/{key}" target="_blank" class="text-decoration-none"><img src="https://issues.redhat.com/favicon.ico" alt="" style="width:12px;height:12px;vertical-align:text-bottom"> {key}</a> {issue.get("summary","")}',
-            issue.get("status", "")))
+            issue.get("status", ""), f"jira:{key}"))
 
     items.sort(key=lambda x: x[0])
     items = items[:limit]
@@ -162,10 +171,11 @@ def render_top_priorities(review_prs, followup_prs, jira_issues, limit=8):
 
     TYPE_BADGE = {"review": ("purple", "Review PR"), "followup": ("success", "Your PR"), "jira": ("info", "Jira")}
     rows = []
-    for i, (_, priority, kind, desc, extra) in enumerate(items, 1):
+    for i, (_, priority, kind, desc, extra, key) in enumerate(items, 1):
         cls = PRIORITY_BADGE.get(priority, "dark")
         type_cls, type_label = TYPE_BADGE.get(kind, ("secondary", kind))
-        rows.append(f"""        <tr>
+        rows.append(f"""        <tr data-key="{key}">
+          <td class="text-center">{checkbox_cell(key)}</td>
           <td class="text-center text-muted fw-bold" style="width:3%">{i}</td>
           <td style="width:10%"><span class="badge bg-{cls}">{priority}</span></td>
           <td style="width:10%"><span class="badge bg-{type_cls}">{type_label}</span></td>
@@ -207,7 +217,8 @@ def render_jira_groups(issues):
             status = issue.get("status", "")
             url = f"https://issues.redhat.com/browse/{key}"
 
-            rows.append(f"""        <tr>
+            rows.append(f"""        <tr data-key="jira:{key}">
+          <td class="text-center">{checkbox_cell(f"jira:{key}")}</td>
           <td><a href="{url}" target="_blank" class="text-decoration-none">{key} {summary}</a></td>
           <td class="text-end text-nowrap">{status_badge(status)}</td>
         </tr>""")
@@ -220,7 +231,7 @@ def render_jira_groups(issues):
   <div class="card-body p-0">
     <table class="table table-hover table-fixed align-middle mb-0">
       <thead class="table-light">
-        <tr><th style="width:85%">Issue <span class="sort-arrow">&#9650;</span></th><th style="width:15%" class="text-end">Status <span class="sort-arrow">&#9650;</span></th></tr>
+        <tr><th class="text-center" style="width:3%"></th><th style="width:82%">Issue <span class="sort-arrow">&#9650;</span></th><th style="width:15%" class="text-end">Status <span class="sort-arrow">&#9650;</span></th></tr>
       </thead>
       <tbody>
 {"".join(rows)}
@@ -241,6 +252,14 @@ def main():
         data = json.load(f)
 
     generated = data.get("generated", datetime.now(tz=None).isoformat())
+    # Check state is namespaced by report build, so every new run starts clean.
+    # Stamped at generation time (not from the data file) so the guarantee holds
+    # no matter how the data JSON was produced.
+    generated_token = datetime.now().strftime("%Y%m%dT%H%M%S%f")
+    # Only state older than this is pruned. A newer run still starts unchecked
+    # (it reads its own key), but a tab left open from an earlier run keeps its
+    # marks instead of losing them to the next run's cleanup.
+    stale_before = (datetime.now() - timedelta(days=7)).strftime("%Y%m%dT%H%M%S000000")
     groups = data.get("groups", [])
     unlinked = data.get("unlinked_prs", [])
 
@@ -302,8 +321,11 @@ def main():
     .table th.sorted .sort-arrow {{ color: #212529; }}
     .table td {{ font-size: .85rem; }}
     .table-fixed {{ table-layout: fixed; }}
-    .table-fixed td:first-child {{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+    .table-fixed td:nth-child(2) {{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
     .bg-purple {{ background-color: #6f42c1 !important; }}
+    .task-check {{ cursor: pointer; }}
+    tr.done-row > td:not(:first-child) {{ opacity: .45; }}
+    tr.done-row a {{ text-decoration: line-through !important; }}
     a {{ color: #0d6efd; }}
     a:hover {{ color: #0a58ca; }}
   </style>
@@ -375,6 +397,8 @@ def main():
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   document.querySelectorAll('.table th').forEach(th => {{
+    const headerArrow = th.querySelector('.sort-arrow');
+    if (!headerArrow) return;
     th.addEventListener('click', () => {{
       const table = th.closest('table');
       const tbody = table.querySelector('tbody');
@@ -384,7 +408,8 @@ def main():
       const asc = arrow.textContent.trim() === '▲';
       table.querySelectorAll('th').forEach(h => {{
         h.classList.remove('sorted');
-        h.querySelector('.sort-arrow').textContent = '▲';
+        const a = h.querySelector('.sort-arrow');
+        if (a) a.textContent = '▲';
       }});
       th.classList.add('sorted');
       arrow.textContent = asc ? '▼' : '▲';
@@ -398,6 +423,55 @@ def main():
       rows.forEach(r => tbody.appendChild(r));
     }});
   }});
+
+  // Check state is scoped to this specific report build: a new run starts
+  // clean, while refreshing the same page keeps your marks.
+  const REPORT_VERSION = '{generated_token}';
+  const DONE_PREFIX = 'workday-prep-done:';
+  const DONE_KEY = DONE_PREFIX + REPORT_VERSION;
+  const STALE_BEFORE = '{stale_before}';
+
+  try {{
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(DONE_PREFIX) && k.slice(DONE_PREFIX.length) < STALE_BEFORE)
+      .forEach(k => localStorage.removeItem(k));
+  }} catch (e) {{ /* storage unavailable (e.g. Safari on file://) */ }}
+
+  let doneMap = {{}};
+  try {{
+    doneMap = JSON.parse(localStorage.getItem(DONE_KEY) || '{{}}') || {{}};
+  }} catch (e) {{
+    doneMap = {{}};
+  }}
+
+  function saveDone() {{
+    try {{
+      localStorage.setItem(DONE_KEY, JSON.stringify(doneMap));
+    }} catch (e) {{ /* ignore: state stays in memory for this page only */ }}
+  }}
+
+  // Applies state to every checkbox with a given key, so the same item shown in
+  // Top Priorities and in its tab stays in sync.
+  function syncDone() {{
+    document.querySelectorAll('.task-check').forEach(cb => {{
+      const on = !!doneMap[cb.dataset.key];
+      cb.checked = on;
+      const tr = cb.closest('tr');
+      if (tr) tr.classList.toggle('done-row', on);
+    }});
+  }}
+
+  document.addEventListener('change', e => {{
+    const cb = e.target.closest('.task-check');
+    if (!cb) return;
+    const key = cb.dataset.key;
+    if (cb.checked) doneMap[key] = 1;
+    else delete doneMap[key];
+    saveDone();
+    syncDone();
+  }});
+
+  syncDone();
   </script>
 </body>
 </html>"""
@@ -405,7 +479,23 @@ def main():
     with open(sys.argv[2], "w") as f:
         f.write(html)
 
+    # The live report is overwritten on every run, so keep a timestamped copy
+    # alongside it. This is the only record that a given run happened.
+    out_dir = os.path.dirname(os.path.abspath(sys.argv[2]))
+    archive = os.path.join(out_dir, datetime.now().strftime("workday-%Y-%m-%d-%H%M.html"))
+    with open(archive, "w") as f:
+        f.write(html)
+
+    # Prune old archives; keep the 30 most recent.
+    archives = sorted(glob.glob(os.path.join(out_dir, "workday-*.html")))
+    for stale in archives[:-30]:
+        try:
+            os.remove(stale)
+        except OSError:
+            pass
+
     print(f"Report written to {sys.argv[2]}")
+    print(f"Archived as {archive}")
     print(f"{n_review} PRs to review, {n_followup} PRs to follow up, {n_jira} Jira issues")
 
 
