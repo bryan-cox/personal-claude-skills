@@ -44,7 +44,7 @@ Populate Obsidian daily notes from GitHub PR and Jira activity. Generate biweekl
 
 **Skills included:**
 - `/update-worklog` — Queries GitHub for all PR activity (authored, reviewed, commented) on a given date and writes structured entries to the Obsidian daily note (`~/Red Hat/Work log/YYYY/MM/YYYY-MM-DD.md`) by default. Supports incremental updates via `last_updated` timestamps. Pass `--file PATH` to write to a worklog.yaml instead.
-- `/status-update` — Generates and opens the HTML work report and Slack summary, commits the Markdown scrum report, and posts Jira status comments only after confirmation. Uses Obsidian daily notes by default; pass `--file PATH` to use a worklog.yaml instead.
+- `/status-update` — Generates and opens the HTML work report and Slack-ready HTML summary, commits the Markdown scrum report, and posts Jira status comments only after confirmation. Uses Obsidian daily notes by default; pass `--file PATH` to use a worklog.yaml instead.
 
 **Prerequisites:**
 - GitHub CLI (`gh`) installed and authenticated
