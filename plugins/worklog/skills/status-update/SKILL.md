@@ -65,7 +65,8 @@ Find the **most recent Tuesday or Thursday strictly before today**:
    - `**🦀 Things I've been working on**` header followed by a paragraph of **4-5 sentences max**. Prioritize: bug fixes, items that affect the whole team (CI reliability, shared tooling, test infrastructure), and merged PRs. Reference JIRA ticket IDs inline. Omit low-impact or routine items — the full status link covers those.
    - `**⭐ Things I plan on working on next**` header followed by a short paragraph summarizing upcoming work
    - A footer link: `[Full, detailed status available here]({github-remote-url}/blob/main/{today}-hypershift-scrum-status.md)` where `{github-remote-url}` is derived from the scrum repo's git remote in step 3
-   - Keep the page easy to copy with selectable text, paragraph breaks, and clickable links.
+   - Keep the page easy to copy with selectable text and paragraph breaks.
+   - Wrap every ticket ID and PR reference in an `<a href>` to its Jira issue or GitHub PR. Never leave `CNTRLPLANE-1234` or `#1234` as bare text.
    - Use bold paragraphs for section headers instead of HTML heading tags, so Slack preserves the formatting when pasted.
    - Open the HTML file in the default browser. Leave it uncommitted; only the Markdown report is pushed.
    - In chat, report the page path and that it opened. Do not repeat the full summary unless the user asks.
