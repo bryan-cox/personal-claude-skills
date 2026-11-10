@@ -38,17 +38,18 @@ Find the **most recent Tuesday or Thursday strictly before today**:
 
 1. **Calculate the reporting dates** using the table above. Set `START_DATE` to the most recent Tuesday or Thursday strictly before today and `END_DATE` to today. Format both as `YYYY-MM-DD`.
 
-2. **Generate and open the local work report**:
+2. **Generate the local work report**:
    - Obsidian is the default source. Do not pass an `--obsidian` flag.
    - Use an explicit output path so the command does not overwrite `weekly-report.html`:
       ```
-      /taskledger:html-report --start-date {START_DATE} --end-date {END_DATE} --output ~/worklog/{START_DATE}-to-{END_DATE}-work-report.html
+      /taskledger:html-report --start-date {START_DATE} --end-date {END_DATE} --output ~/worklog/{START_DATE}-to-{END_DATE}-work-report.html --no-open
       ```
    - If `--file PATH` was passed explicitly:
       ```
-      /taskledger:html-report --file {PATH} --start-date {START_DATE} --end-date {END_DATE} --output ~/worklog/{START_DATE}-to-{END_DATE}-work-report.html
+      /taskledger:html-report --file {PATH} --start-date {START_DATE} --end-date {END_DATE} --output ~/worklog/{START_DATE}-to-{END_DATE}-work-report.html --no-open
       ```
-   - If the slash command is unavailable, follow `~/bryan-cox/taskledger/plugins/taskledger/commands/html-report.md`.
+   - Pass `--no-open` so the report is written without launching a browser. The Slack page in step 4 is the only artifact that opens.
+   - If the slash command is unavailable, follow `~/bryan-cox/taskledger/plugins/taskledger/commands/html-report.md` and pass `--no-open`.
 
 3. **Commit scrum status to repo**:
    - Use the `--scrum-repo` path (default: `~/bryan-cox/scrum-status`)
