@@ -10,11 +10,13 @@ Collects GitHub PR activity and the user's Jira comments, worklogs, transitions,
 ## Arguments
 
 ```
-/update-worklog [--date YYYY-MM-DD] [--dry-run]
+/update-worklog [since TIMESTAMP] [--date YYYY-MM-DD] [--dry-run]
 ```
 
 - `--date`: date to populate (default: today)
 - `--dry-run`: preview the merged entries without writing
+- `since TIMESTAMP` or `--since TIMESTAMP`: use an explicit exclusive lower bound, including activity on a previous calendar day.
+- `--until TIMESTAMP`: use a fixed inclusive collection cutoff. Capture it before collecting either source.
 
 ## Scripts
 
@@ -30,22 +32,35 @@ Or use `~/.claude/plugins/worklog/scripts/` when running from the installed plug
 
 ### 1. Determine the activity window
 
-Set `TARGET_DATE` from `--date` or today's date. Read the existing note at `~/Red Hat/Work log/YYYY/MM/YYYY-MM-DD.md` and capture its `*Last updated: ...*` timestamp, if present. Use that exact timestamp as the strict lower bound for both sources. If the note or timestamp is absent, collect activity from the start of `TARGET_DATE`. The upper bound is now for today, or the end of `TARGET_DATE` for a past date.
+Set `TARGET_DATE` from `--date` or today's date in America/New_York. Resolve the window once before collecting either source:
+
+```bash
+python3 ${SCRIPTS}/worklog_window.py --date ${TARGET_DATE} [--since ${SINCE}]
+```
+
+The resolver uses an explicit `since` first. Otherwise it reads the target note's `*Last updated: ...*` timestamp. If the target note has not been created or has no timestamp, it uses the newest earlier daily log with a valid timestamp. Only when there is no prior watermark does it start at the target day's local midnight. An invalid timestamp is an error, not permission to skip work.
+
+Save the returned `since`, `until`, `watermark_source`, and target note path. Use the same fixed cutoff for both sources. Include activity strictly after `since` and no later than `until`. With no prior watermark, include the target day's local midnight. A new daily note may contain previous-evening or weekend activity since the preceding note; do not filter it back down to a calendar-date prefix.
 
 ### 2. Collect GitHub activity
 
 Run the existing scripts:
 
 ```bash
-python3 ${SCRIPTS}/fetch-prs.py --date ${TARGET_DATE} [--since ${LAST_UPDATED}] \
-  | python3 ${SCRIPTS}/classify-prs.py --date ${TARGET_DATE} [--since ${LAST_UPDATED}]
+set -o pipefail
+python3 ${SCRIPTS}/fetch-prs.py --date ${TARGET_DATE} --since "${SINCE}" --until "${UNTIL}" \
+  | python3 ${SCRIPTS}/classify-prs.py --date ${TARGET_DATE} --since "${SINCE}" --until "${UNTIL}"
 ```
 
 `fetch-prs.py` searches authored, reviewed, and commented PRs. `classify-prs.py` verifies activity timestamps, filters CI retrigger commands, groups authored work by Jira key, and creates the separate code-review task.
 
+Both commands must succeed before using their output. Pagination must complete. The classifier uses the full timestamp window, including verified PR lifecycle events, and preserves all PR links for a grouped Jira issue. An enterprise-restricted token may fall back to unauthenticated reads of public GitHub data; that fallback requires `jq` and must also succeed.
+
 ### 3. Collect Jira activity
 
 Use the Atlassian Jira MCP tools; do not infer Jira activity from issue `updated` timestamps alone.
+
+If those MCP tools are unavailable, use the configured authenticated Jira REST API with the same identity, pagination, and event filters below. For Jira Cloud, verify `/rest/api/3/myself`, search `/rest/api/3/search/jql`, and fully page each issue's comments, worklogs, and changelog. Reuse existing credentials. The chief-of-staff workspace's `sources.Jira` and `jira_activity` provide that adapter; REST transport does not change the activity-window or author requirements.
 
 1. Call `atlassianUserInfo` and use its `account_id` as the current user.
 2. Call `getAccessibleAtlassianResources` to resolve the Jira `cloudId`. Use that ID for the JQL search and issue reads. Search with `searchJiraIssuesUsingJql`, using this JQL and `maxResults: 100`. Use a one-day cushion around the UTC window when computing the JQL dates; the precise UTC filter below removes the extra candidates.
@@ -65,7 +80,7 @@ Use the Atlassian Jira MCP tools; do not infer Jira activity from issue `updated
    - worklogs: match `author.accountId` or `updateAuthor.accountId`; use `created` or `updated` for when the log was entered/edited, and retain `started` for when the work occurred
    - issue changes: match `changelog.histories[].author.accountId`; use the history's `created` time and summarize its changed fields
 
-   Normalize Jira timestamps and `LAST_UPDATED` to UTC. Include events strictly after `LAST_UPDATED` and no later than the activity-window end. When no `LAST_UPDATED` exists, include the target date's activity. `updatedBy` is date-granular, so this timestamp check is required for incremental runs.
+   Normalize Jira timestamps and the resolved `SINCE` to UTC. Include events strictly after `SINCE` and no later than the fixed `UNTIL`. When there is no watermark, include the target day's activity from local midnight. `updatedBy` is date-granular, so this timestamp check is required for incremental runs.
 5. Ignore comments containing `Generated via TaskLedger /update-jira`; they are generated status reports, not new worklog activity. Check pagination metadata for comments, worklogs, and changelog. If Jira reports more records than it returned and the missing page could overlap the activity window, tell the user the Jira scan is incomplete instead of claiming a full cross-reference.
 
 Keep restricted Jira details within the local worklog. Jira access for this workflow does not authorize publishing issue details to public reports or other channels.
@@ -88,18 +103,20 @@ The writer coalesces repeated Jira keys as a safeguard and merges new descriptio
 
 ### 5. Preview and confirm
 
-Show counts for GitHub-authored tasks, Jira issues with activity, and PR reviews. Preview the merged task groups by Jira key, including Jira-only work, and call out any Jira scan limits. If `--dry-run`, stop without writing. Otherwise ask the user to confirm the merged preview.
+Show counts for GitHub-authored tasks, Jira issues with activity, and PR reviews. Preview the merged task groups by Jira key, including Jira-only work, and call out any Jira scan limits. If `--dry-run`, stop without writing. Otherwise ask for confirmation only when the user has not already authorized the local update. Bryan has authorized chief-of-staff updates at 8 AM, noon, and 4 PM Eastern without a per-run confirmation.
 
 ### 6. Write the Obsidian note
 
 Write the merged classifier JSON (`authored_tasks` plus `review_task`) to a temporary file, then pass it to the writer:
 
 ```bash
-python3 ${SCRIPTS}/write-obsidian.py --date ${TARGET_DATE} [--dry-run] < /path/to/merged-tasks.json
+python3 ${SCRIPTS}/write-obsidian.py --date ${TARGET_DATE} --last-updated "${UNTIL}" [--dry-run] < /path/to/merged-tasks.json
 ```
 
 The writer deduplicates descriptions and PR links against matching Jira sections in the existing note, merges new activity into those sections, and retains the separate Code Reviews section.
 
+Advance `Last updated` to the successfully collected cutoff, not the later write time. After a complete empty scan, create the daily note if needed and advance that watermark while preserving manual content. If either source is incomplete or writing fails, do not advance the watermark or claim the update complete.
+
 ### 7. Report
 
-Report the work window, GitHub and Jira activity counts, Jira keys merged, new task sections, existing sections updated, duplicates skipped, and any incomplete Jira results. If incremental, include the `LAST_UPDATED` timestamp used.
+Report the exact work window and watermark source, GitHub and Jira activity counts, Jira keys merged, new task sections, existing sections updated, duplicates skipped, and any incomplete Jira results. Chief-of-staff runs report concisely in its configured home thread and link the daily note.

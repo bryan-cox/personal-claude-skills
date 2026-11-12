@@ -16,6 +16,8 @@ import re
 import sys
 from pathlib import Path
 
+from worklog_window import iso, parse_timestamp
+
 WORKLOG_ROOT = Path.home() / "Red Hat" / "Work log"
 JIRA_URL = "https://issues.redhat.com/browse"
 LAST_UPDATED_RE = re.compile(r"^\*Last updated: (.+)\*$", re.MULTILINE)
@@ -329,6 +331,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--last-updated", help="The successfully collected inclusive cutoff, not the later write time")
     args = parser.parse_args()
 
     data = json.load(sys.stdin)
@@ -339,7 +342,7 @@ def main():
     existing = read_existing(path)
     content = existing or ""
 
-    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    timestamp = iso(parse_timestamp(args.last_updated)) if args.last_updated else datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     new_sections = []
     updated_sections = []
@@ -418,6 +421,16 @@ def main():
     total_new = len(new_sections) + updated_in_place + (1 if new_review_count else 0)
     if total_new == 0:
         print("No new GitHub or Jira activity to add.")
+        if args.last_updated and not args.dry_run:
+            content = existing or create_new_note(args.date, timestamp)
+            if LAST_UPDATED_RE.search(content):
+                content = LAST_UPDATED_RE.sub(f"*Last updated: {timestamp}*", content)
+            else:
+                head, _, tail = content.partition("\n")
+                content = head + f"\n\n*Last updated: {timestamp}*\n" + tail
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content)
+            print(f"Advanced the completed collection watermark in {path}")
         return
 
     summary = f"Found {len(authored_tasks)} authored/Jira task groups, {new_review_count} new reviews. "

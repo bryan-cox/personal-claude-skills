@@ -1,12 +1,41 @@
 import importlib.util
 import unittest
+import sys
+import tempfile
+import io
+import json
+from contextlib import redirect_stdout
+from unittest.mock import patch
 from pathlib import Path
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "write-obsidian.py"
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("write_obsidian", SCRIPT)
 write_obsidian = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(write_obsidian)
+
+
+class CompletedWindowTests(unittest.TestCase):
+    def test_empty_successful_scan_advances_only_to_its_cutoff_and_preserves_notes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);note=root/'2026/11/2026-11-12.md';note.parent.mkdir(parents=True)
+            note.write_text('# Daily Log · 2026-11-12\n\n*Last updated: 2026-11-12T13:00:00Z*\n\n## 🕐 Hours\n7:00 AM to 3:30 PM\n\nMy manual notes stay here.\n')
+            with patch.object(write_obsidian,'WORKLOG_ROOT',root), patch.object(sys,'argv',['writer','--date','2026-11-12','--last-updated','2026-11-12T17:00:00Z']), patch.object(sys,'stdin',io.StringIO(json.dumps({'authored_tasks':[],'review_task':None}))), redirect_stdout(io.StringIO()):
+                write_obsidian.main()
+            text=note.read_text()
+            self.assertIn('*Last updated: 2026-11-12T17:00:00Z*',text)
+            self.assertIn('My manual notes stay here.',text)
+            self.assertIn('7:00 AM to 3:30 PM',text)
+
+    def test_first_empty_scan_creates_the_new_daily_note_with_the_completed_cutoff(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            with patch.object(write_obsidian,'WORKLOG_ROOT',root), patch.object(sys,'argv',['writer','--date','2026-11-13','--last-updated','2026-11-13T13:00:00Z']), patch.object(sys,'stdin',io.StringIO('{}')), redirect_stdout(io.StringIO()):
+                write_obsidian.main()
+            note=root/'2026/11/2026-11-13.md'
+            self.assertTrue(note.is_file())
+            self.assertIn('*Last updated: 2026-11-13T13:00:00Z*',note.read_text())
 
 
 class MergeJiraTaskTests(unittest.TestCase):

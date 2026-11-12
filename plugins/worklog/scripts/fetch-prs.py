@@ -14,6 +14,9 @@ import re
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
+
+from worklog_window import ActivityWindow, DEFAULT_TIMEZONE, iso
 
 JIRA_RE = re.compile(r"[A-Z][A-Z0-9]+-\d+")
 
@@ -28,11 +31,13 @@ def run_gh_search(flag: str, date: str) -> list[dict]:
         f"--json={GH_FIELDS}",
         "--limit=1000",
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     if result.returncode != 0:
-        print(f"warning: gh search --{flag} failed: {result.stderr.strip()}", file=sys.stderr)
-        return []
-    return json.loads(result.stdout) if result.stdout.strip() else []
+        raise RuntimeError(f"gh search --{flag} failed: {result.stderr.strip()}")
+    data = json.loads(result.stdout) if result.stdout.strip() else []
+    if len(data) >= 1000:
+        raise RuntimeError("GitHub search reached its limit; narrow the activity window")
+    return data
 
 
 def extract_jira(pr: dict) -> str:
@@ -46,13 +51,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--since", default="", help="ISO 8601 timestamp for incremental runs")
+    parser.add_argument("--until", default="", help="Fixed inclusive collection cutoff")
+    parser.add_argument("--timezone", default=DEFAULT_TIMEZONE)
     args = parser.parse_args()
+    window = ActivityWindow.for_date(args.date, args.since, args.until, args.timezone)
+    search_date = (window.since - timedelta(days=1)).date().isoformat()
 
     queries = ["author", "reviewed-by", "commenter"]
     source_labels = {"author": "authored", "reviewed-by": "reviewed", "commenter": "commented"}
 
     with ThreadPoolExecutor(max_workers=3) as pool:
-        futures = {q: pool.submit(run_gh_search, q, args.date) for q in queries}
+        futures = {q: pool.submit(run_gh_search, q, search_date) for q in queries}
         results = {q: f.result() for q, f in futures.items()}
 
     merged: dict[str, dict] = {}
@@ -88,7 +97,8 @@ def main():
     for pr in output:
         pr.pop("author", None)
 
-    result = {"since": args.since or "", "prs": output}
+    result = {"since": iso(window.since) if window.strict_start else "", "until": iso(window.until),
+              "timezone": args.timezone, "prs": output}
     if username:
         result["username"] = username
     print(json.dumps(result))
