@@ -23,14 +23,14 @@ JIRA_RE = re.compile(r"[A-Z][A-Z0-9]+-\d+")
 GH_FIELDS = "number,title,url,state,isDraft,repository,body,updatedAt,author"
 
 
-def run_gh_search(flag: str, date: str) -> list[dict]:
+def run_gh_search(flag: str, date: str | None) -> list[dict]:
     cmd = [
         "gh", "search", "prs",
         f"--{flag}=@me",
-        f"--updated=>={date}",
         f"--json={GH_FIELDS}",
         "--limit=1000",
     ]
+    cmd.append(f"--updated=>={date}" if date else "--state=open")
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     if result.returncode != 0:
         raise RuntimeError(f"gh search --{flag} failed: {result.stderr.strip()}")
@@ -60,9 +60,11 @@ def main():
     queries = ["author", "reviewed-by", "commenter"]
     source_labels = {"author": "authored", "reviewed-by": "reviewed", "commenter": "commented"}
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         futures = {q: pool.submit(run_gh_search, q, search_date) for q in queries}
+        open_authored_future = pool.submit(run_gh_search, "author", None)
         results = {q: f.result() for q, f in futures.items()}
+        open_authored = open_authored_future.result()
 
     merged: dict[str, dict] = {}
     for query, prs in results.items():
@@ -98,7 +100,8 @@ def main():
         pr.pop("author", None)
 
     result = {"since": iso(window.since) if window.strict_start else "", "until": iso(window.until),
-              "timezone": args.timezone, "prs": output}
+              "timezone": args.timezone, "prs": output,
+              "open_authored_prs": [{"jira": extract_jira(pr), "url": pr["url"], "state": "open"} for pr in open_authored]}
     if username:
         result["username"] = username
     print(json.dumps(result))

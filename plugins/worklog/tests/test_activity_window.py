@@ -5,6 +5,8 @@ import subprocess
 import sys
 import unittest
 import tempfile
+import io
+from contextlib import redirect_stdout
 from datetime import datetime, timezone
 from unittest.mock import patch
 from pathlib import Path
@@ -42,6 +44,19 @@ class ActivityWindowTests(unittest.TestCase):
             activity = classifier.fetch_authored_activity({'repo':'example/project','number':42},'2026-11-13','2026-11-12T21:27:06Z','bryan','2026-11-13T13:00:00Z')
         self.assertEqual(activity['lifecycle'], ['PR merged'])
         self.assertEqual(activity['commits'], [])
+
+    def test_idle_open_related_pr_keeps_a_changed_jira_group_in_progress(self):
+        common={'jira':'CNTRLPLANE-42','repo':'example/project','sources':['authored'],'isDraft':False}
+        prs=[common|{'number':1,'title':'Finish one part','url':'https://github.com/example/project/pull/1','state':'closed'},
+             common|{'number':2,'title':'Remaining part','url':'https://github.com/example/project/pull/2','state':'open'}]
+        def activity(pr,*args):
+            return {'commits':[],'reviews':[],'comments':[],'lifecycle':['PR merged'] if pr['number']==1 else []}
+        output=io.StringIO()
+        with patch.object(sys,'argv',['classifier','--date','2026-11-13']), patch.object(sys,'stdin',io.StringIO(json.dumps({'username':'bryan','since':'2026-11-12T21:27:06Z','until':'2026-11-13T13:00:00Z','prs':prs}))), patch.object(classifier,'fetch_authored_activity',side_effect=activity), redirect_stdout(output):
+            classifier.main()
+        tasks=json.loads(output.getvalue())['authored_tasks']
+        self.assertEqual(len(tasks),1)
+        self.assertEqual(tasks[0]['status'],'in progress')
 
 
 class WatermarkTests(unittest.TestCase):

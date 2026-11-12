@@ -187,6 +187,10 @@ def main():
 
     authored = [p for p in prs if "authored" in p["sources"]]
     non_authored = [p for p in prs if "authored" not in p["sources"]]
+    open_related = {}
+    for pr in authored + data.get("open_authored_prs", []):
+        if pr.get("jira") and pr.get("state", "").lower() == "open":
+            open_related.setdefault(pr["jira"], set()).add(pr["url"])
 
     authored_tasks = []
     with ThreadPoolExecutor(max_workers=5) as pool:
@@ -227,7 +231,7 @@ def main():
         combined_descs = []
         for t in tasks:
             combined_descs.extend(t["descriptions"])
-        status = "in progress" if any(t["status"] == "in progress" for t in tasks) else "completed"
+        status = "in progress" if jira in open_related or any(t["status"] == "in progress" for t in tasks) else "completed"
         upnext = next((t["upnext_description"] for t in tasks if t["upnext_description"]), "")
         grouped_tasks.append({
             "jira_ticket": jira,
@@ -236,7 +240,7 @@ def main():
             "status": status,
             "upnext_description": upnext,
             "github_pr": tasks[0]["github_pr"],
-            "github_prs": list(dict.fromkeys(t["github_pr"] for t in tasks)),
+            "github_prs": list(dict.fromkeys([t["github_pr"] for t in tasks] + sorted(open_related.get(jira, [])))),
             "blocker": "",
         })
     grouped_tasks.extend(ungrouped)

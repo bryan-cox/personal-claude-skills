@@ -95,6 +95,7 @@ Before previewing, merge Jira-derived tasks into the GitHub classifier's `author
 - If GitHub already has that key, add Jira context to that task instead of creating a second task. Jira-only issues become new tasks.
 - Remove exact and semantic duplicates across comments, worklogs, changelog events, and PR descriptions. Keep the most informative wording once.
 - When current Jira status and an associated PR disagree, keep the task `in progress` if either the Jira status is not done or any associated PR remains open.
+- Check all related authored open PRs, including idle PRs with no activity in this window. The fetcher's `open_authored_prs` snapshot supplies that context. Fetch the current Jira status for GitHub-derived task groups even when that issue has no new Jira activity; a merged sub-PR must not mark an unfinished issue completed. If a referenced issue cannot be resolved, report that gap and keep its status conservative.
 - Keep `review_task` as the separate Code Reviews section; do not duplicate PR reviews as Jira work items.
 
 Jira-derived task objects use the classifier schema: `jira_ticket`, `title`, `descriptions`, `status` (`completed` or `in progress`), `upnext_description`, and `github_pr` or `github_prs`. Leave `upnext_description` empty unless Jira or GitHub supplied an explicit next step.
