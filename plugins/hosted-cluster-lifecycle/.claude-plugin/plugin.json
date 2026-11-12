@@ -1,0 +1,8 @@
+{
+  "name": "hosted-cluster-lifecycle",
+  "description": "Guide HyperShift HostedCluster setup and diagnose incomplete startup on AWS or self-managed Azure",
+  "version": "0.1.0",
+  "author": {
+    "name": "github.com/bryan-cox"
+  }
+}

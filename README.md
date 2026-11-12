@@ -94,3 +94,18 @@ Assign story points to Jira issues using the GCP HCP pointing rubric, recursivel
 **What it does:**
 - Given a Feature or Epic, recursively walks the hierarchy and points every unpointed issue
 - Supports `--dry-run`, `--force`, and custom story points field overrides
+
+### hosted-cluster-lifecycle
+
+Guide HyperShift HostedCluster setup and diagnose why an existing cluster has not reached its requested readiness target, on AWS or self-managed Azure.
+
+**What it does:**
+- Routes intake, setup, and P0–P9 startup diagnosis across the control-plane, worker, and guest-convergence workstreams
+- Loads only the provider and lifecycle references needed for the current gate: AWS, self-managed Azure, evidence capture, observed cases, and teardown
+- Distinguishes historical first success from current readiness, and reports missing or failed queries as unknown rather than as a negative result
+- Covers the normal AWS teardown path and the checks that verify Kubernetes and cloud-resource cleanup
+
+**Skills included:**
+- `/hosted-cluster-lifecycle` — Starts at intake to resolve the task mode, target management cluster, HostedCluster identity, provider, and requested readiness target, then names the earliest unresolved dependency in each workstream.
+
+**Related:** The merged HyperShift docs carry the deeper visual material: [startup roadmap](https://hypershift.pages.dev/reference/cluster-startup-roadmap/) and [AWS teardown roadmap](https://hypershift.pages.dev/reference/cluster-teardown-roadmap/).

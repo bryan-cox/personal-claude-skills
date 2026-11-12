@@ -51,6 +51,12 @@
       "source": "./plugins/hypershift-presubmit-report",
       "description": "Generate pass/fail health reports for openshift/hypershift presubmit CI jobs from Prow",
       "version": "0.1.0"
+    },
+    {
+      "name": "hosted-cluster-lifecycle",
+      "source": "./plugins/hosted-cluster-lifecycle",
+      "description": "Guide HyperShift HostedCluster setup and diagnose incomplete startup on AWS or self-managed Azure",
+      "version": "0.1.0"
     }
   ]
 }
